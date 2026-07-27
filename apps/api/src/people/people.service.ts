@@ -53,7 +53,7 @@ export class PeopleService {
     };
   }
 
-  /// GET /people[?society=&position=&department=&status=]
+  /// GET /people[?society=&department=&status=]
   /// Sans `society` : vue transversale du Core Directory (Annuaire).
   /// Avec `society` : vue "employé" filtrée — c'est l'endpoint que le CRM appelle
   /// pour peupler ses listes de commerciaux, jamais une copie locale.
@@ -83,7 +83,6 @@ export class PeopleService {
     return people
       .map((p) => this.toEmployeeView(p, query.society!))
       .filter((view): view is EmployeeView => Boolean(view))
-      .filter((view) => (query.position ? view.position === query.position : true))
       .filter((view) => (query.department ? view.department === query.department : true))
       .filter((view) => (query.status ? view.status === query.status : true));
   }
