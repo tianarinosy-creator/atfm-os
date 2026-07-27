@@ -1,0 +1,125 @@
+// Core Directory — référentiel unique des personnes (voir section 5 du dossier de passation).
+// Seul le module RH est autorisé à créer un Person / une Affectation initiale ;
+// cette règle est imposée côté API (apps/api), pas ici.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AffectationStatus {
+  Actif
+  Inactif
+  Suspendu
+}
+
+enum CoreEventType {
+  EmployeeCreated
+  EmployeeUpdated
+  EmployeeActivated
+  EmployeeDeactivated
+  EmployeeTransferred
+  EmployeeDeleted
+  RoleAssigned
+  RoleRemoved
+}
+
+model Person {
+  id        String   @id @default(uuid()) @map("person_id")
+  firstName String
+  lastName  String
+  gender    String
+  birthDate DateTime?
+  photoUrl  String?
+  email     String   @unique
+  phone     String?
+  address   String?
+
+  account      Account?
+  affectations Affectation[]
+  roles        Role[]
+  events       CoreEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("people")
+}
+
+/// Une affectation = le lien entre une personne et une société (filiale) à un instant donné.
+/// Changement de société -> exitDate posée sur l'ancienne + nouvelle ligne créée (jamais de suppression).
+model Affectation {
+  id         String            @id @default(uuid())
+  personId   String            @map("person_id")
+  person     Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  society    String
+  department String
+  position   String
+  manager    String?
+
+  entryDate DateTime
+  exitDate  DateTime?
+
+  status      AffectationStatus @default(Actif)
+  replacement String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society, position])
+  @@index([personId])
+  @@map("affectations")
+}
+
+/// Identifiants de connexion — 1:1 avec Person. Un compte lié à un Person dont
+/// toutes les affectations sont Inactif ne doit plus pouvoir se connecter.
+model Account {
+  personId     String   @id @map("person_id")
+  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  username     String   @unique
+  passwordHash String
+  mfaEnabled   Boolean  @default(false)
+  lastLogin    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("accounts")
+}
+
+/// Rôles applicatifs par société (RBAC), ex. "RH", "Commercial", "Validateur Finance".
+model Role {
+  id       String @id @default(uuid())
+  personId String @map("person_id")
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  society String
+  role    String
+
+  createdAt DateTime @default(now())
+
+  @@index([personId])
+  @@index([society, role])
+  @@map("roles")
+}
+
+/// Journal d'événements Core Directory (MVP en table + polling, avant Redis Streams/Kafka).
+model CoreEvent {
+  id          String        @id @default(uuid())
+  type        CoreEventType
+  personId    String?       @map("person_id")
+  person      Person?       @relation(fields: [personId], references: [id], onDelete: SetNull)
+  personName  String
+  description String
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("core_events")
+}
