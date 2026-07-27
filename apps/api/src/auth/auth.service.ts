@@ -33,8 +33,8 @@ export class AuthService {
     // Règle métier : statut Inactif => connexion impossible. Une affectation clôturée
     // (exitDate posée par un transfert) ne compte jamais comme active, quel que soit
     // son statut historique. Si aucune affectation en cours n'est Actif, plus d'accès.
-    const hasActiveAffectation = account.person.affectations.some((a) => !a.exitDate && a.status === "Actif");
-    if (!hasActiveAffectation) {
+    const activeAffectations = account.person.affectations.filter((a) => !a.exitDate && a.status === "Actif");
+    if (activeAffectations.length === 0) {
       throw new UnauthorizedException("Ce compte est inactif sur toutes ses affectations.");
     }
 
@@ -48,6 +48,8 @@ export class AuthService {
       username: account.username,
       name: `${account.person.firstName} ${account.person.lastName}`.trim(),
       roles: account.person.roles.map((r) => ({ society: r.society, role: r.role })),
+      // Appartenance multi-tenant (ex. guard CRM) — distincte des rôles RBAC.
+      societies: [...new Set(activeAffectations.map((a) => a.society))],
     };
 
     return {

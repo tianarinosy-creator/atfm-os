@@ -9,6 +9,9 @@ export interface AuthenticatedUser {
   username: string;
   name: string;
   roles: AuthenticatedUserRole[];
+  // Sociétés où la personne a une affectation active (non clôturée, statut Actif) —
+  // détermine l'appartenance multi-tenant, indépendamment des rôles RBAC (RH, Commercial…).
+  societies: string[];
 }
 
 export interface JwtPayload {
@@ -16,4 +19,5 @@ export interface JwtPayload {
   username: string;
   name: string;
   roles: AuthenticatedUserRole[];
+  societies: string[];
 }

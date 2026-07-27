@@ -37,6 +37,17 @@ export const tenantColors: Record<string, string> = {
   creatic: "#3A5DAE",
 };
 
+export const tenantNames: Record<string, string> = {
+  atfm: "ATFM Legacy",
+  logistics: "Havanana Logistics",
+  housing: "Havanana Housing",
+  films: "Havanana Films",
+  tech: "Havanana Tech",
+  impact: "Havanana Impact",
+  dsfamily: "DS Family",
+  creatic: "Creatic",
+};
+
 export const radius = "10px";
 
 export const fonts = {

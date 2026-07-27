@@ -44,6 +44,10 @@ model Person {
   roles        Role[]
   events       CoreEvent[]
 
+  // Le CRM ne référence jamais qu'un person_id ici — jamais de copie du nom/statut.
+  contactsHandled CrmContact[] @relation("ContactHandledBy")
+  dealsOwned      CrmDeal[]    @relation("DealOwner")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -122,4 +126,90 @@ model CoreEvent {
 
   @@index([createdAt])
   @@map("core_events")
+}
+
+// ============================================================
+// CRM — pipeline, contacts, contrats (Phase 2). Scopé par société
+// (contrairement au Core Directory qui est global). Le "commercial en
+// charge" et le "traité par" ne sont JAMAIS un nom en dur : uniquement
+// un person_id résolu à la volée via PeopleService (GET /people).
+// ============================================================
+
+enum DealStage {
+  prospect
+  qualification
+  proposition
+  negociation
+  gagne
+  perdu
+}
+
+enum ActivityType {
+  call
+  email
+  whatsapp
+  note
+}
+
+model CrmContact {
+  id      String @id @default(uuid())
+  society String
+
+  name       String
+  email      String?
+  phone      String?
+  company    String?
+  position   String?
+  referredBy String?
+  entryDate  DateTime?
+  tags       String[] @default([])
+
+  // "Traité par" — jamais un nom stocké, uniquement une référence Core Directory.
+  handledById String? @map("handled_by_person_id")
+  handledBy   Person? @relation("ContactHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
+
+  deals CrmDeal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@map("crm_contacts")
+}
+
+model CrmDeal {
+  id        String     @id @default(uuid())
+  society   String
+  contactId String     @map("contact_id")
+  contact   CrmContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  title String
+  value Int       @default(0)
+  stage DealStage @default(prospect)
+
+  // "Commercial en charge" — jamais un nom stocké, uniquement une référence Core Directory.
+  ownerPersonId String? @map("owner_person_id")
+  owner         Person? @relation("DealOwner", fields: [ownerPersonId], references: [id], onDelete: SetNull)
+
+  nextActionDate DateTime?
+
+  activities CrmActivity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society, stage])
+  @@map("crm_deals")
+}
+
+model CrmActivity {
+  id     String       @id @default(uuid())
+  dealId String       @map("deal_id")
+  deal   CrmDeal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  type   ActivityType
+  text   String
+  date   DateTime     @default(now())
+
+  @@index([dealId])
+  @@map("crm_activities")
 }

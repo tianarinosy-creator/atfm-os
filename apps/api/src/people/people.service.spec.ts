@@ -6,11 +6,11 @@ import { AuthenticatedUser } from "../auth/auth.types";
 import { createPrismaMock, PrismaMock } from "../test/prisma-mock";
 
 function rh(society: string): AuthenticatedUser {
-  return { personId: "actor-1", username: "actor", name: "Actor", roles: [{ society, role: "RH" }] };
+  return { personId: "actor-1", username: "actor", name: "Actor", roles: [{ society, role: "RH" }], societies: [society] };
 }
 
 function nonRh(): AuthenticatedUser {
-  return { personId: "actor-2", username: "no-role", name: "No Role", roles: [] };
+  return { personId: "actor-2", username: "no-role", name: "No Role", roles: [], societies: [] };
 }
 
 describe("PeopleService", () => {

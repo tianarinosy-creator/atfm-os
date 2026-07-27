@@ -50,7 +50,12 @@ export default async function RhAnnuairePage() {
           </div>
           <span className="text-sm font-bold tracking-tight text-ink">ATFM OS Capital — Annuaire (Core Directory)</span>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-4">
+          <a href="/crm" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            CRM
+          </a>
+          <LogoutButton />
+        </div>
       </header>
 
       <main className="p-6">

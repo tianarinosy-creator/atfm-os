@@ -8,7 +8,7 @@ import { createPrismaMock, PrismaMock } from "../test/prisma-mock";
 const CORRECT_PASSWORD = "correct-password";
 const PASSWORD_HASH = bcrypt.hashSync(CORRECT_PASSWORD, 4);
 
-function buildAccount(affectations: Array<{ status: string; exitDate: Date | null }>) {
+function buildAccount(affectations: Array<{ status: string; exitDate: Date | null; society?: string }>) {
   return {
     personId: "person-1",
     username: "jane.doe",
@@ -18,7 +18,7 @@ function buildAccount(affectations: Array<{ status: string; exitDate: Date | nul
     person: {
       firstName: "Jane",
       lastName: "Doe",
-      affectations,
+      affectations: affectations.map((a) => ({ society: "logistics", ...a })),
       roles: [{ society: "logistics", role: "RH" }],
     },
   };
@@ -80,9 +80,25 @@ describe("AuthService", () => {
       username: "jane.doe",
       name: "Jane Doe",
       roles: [{ society: "logistics", role: "RH" }],
+      societies: ["logistics"],
     });
     expect(prisma.client.account.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { personId: "person-1" } }),
     );
+  });
+
+  it("déduplique les sociétés actives (multi-affectations dans une même société)", async () => {
+    (prisma.client.account.findUnique as jest.Mock).mockResolvedValue(
+      buildAccount([
+        { status: "Actif", exitDate: null, society: "logistics" },
+        { status: "Actif", exitDate: null, society: "logistics" },
+        { status: "Actif", exitDate: null, society: "tech" },
+        { status: "Actif", exitDate: new Date("2026-01-01"), society: "housing" },
+      ]),
+    );
+
+    const result = await authService.login("jane.doe", CORRECT_PASSWORD);
+
+    expect(result.user.societies.sort()).toEqual(["logistics", "tech"]);
   });
 });
