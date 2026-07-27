@@ -37,6 +37,38 @@ export function createPrismaMock() {
     crmActivity: {
       create: jest.fn(),
     },
+    project: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    projectMember: {
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    projectTask: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    projectTaskChecklistItem: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    projectTaskComment: {
+      create: jest.fn(),
+    },
+    projectExpense: {
+      create: jest.fn(),
+    },
+    projectRisk: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
 

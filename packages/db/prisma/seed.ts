@@ -108,6 +108,32 @@ const CRM_CONTACT_SEEDS: Record<
 const DEAL_STAGES_CYCLE = ["prospect", "qualification", "proposition", "negociation", "gagne", "perdu"] as const;
 const DEAL_VALUES_CYCLE = [8000, 15000, 24000, 42000, 60000, 12000];
 
+// Reprend seedProjectsForTenant() du prototype. "team" référence des noms complets
+// de RH_SEED_TEAMS (résolus en person_id plus bas) — jamais un nom stocké tel quel
+// dans un projet.
+const PROJECT_SEEDS: Record<string, { name: string; client: string; team: string[] }[]> = {
+  atfm: [{ name: "Refonte gouvernance groupe", client: "Direction ATFM", team: ["Marc Delacroix", "Sophie Renard"] }],
+  logistics: [
+    { name: "Optimisation flotte régionale", client: "Transalliance", team: ["Karim Fassi", "Elodie Vasseur"] },
+    { name: "Déploiement WMS entrepôt Nord", client: "Geodis", team: ["Julien Roche"] },
+  ],
+  housing: [{ name: "Programme résidentiel Le Clos Vert", client: "Nexity", team: ["Nadia Belkacem", "Thomas Girard"] }],
+  films: [
+    { name: "Post-production 'Horizon Bleu'", client: "Canal+", team: ["Claire Aubert"] },
+    { name: "Coproduction série originale", client: "StudioCanal", team: ["Yanis Cherif"] },
+  ],
+  tech: [
+    { name: "Plateforme retail connectée", client: "Decathlon", team: ["Léa Fontaine", "Hugo Marchand"] },
+    { name: "Module IA prédictive assurance", client: "AXA", team: ["Hugo Marchand", "Inès Zeroual"] },
+  ],
+  impact: [{ name: "Bilan carbone filiales 2026", client: "ADEME", team: ["Paul Lemercier"] }],
+  dsfamily: [{ name: "Structuration patrimoniale", client: "Serrano Family Office", team: ["Dominique Serrano"] }],
+  creatic: [
+    { name: "Campagne de marque premium", client: "L'Oréal", team: ["Amélie Nguyen"] },
+    { name: "Refonte identité visuelle", client: "LVMH", team: ["Victor Vidal"] },
+  ],
+};
+
 async function main() {
   const today = Date.now();
   const inDays = (n: number) => new Date(today + n * 86_400_000);
@@ -117,6 +143,8 @@ async function main() {
   // person_id des commerciaux par société — pour assigner "Commercial en charge" /
   // "Traité par" dans le CRM sans jamais dupliquer leur nom (voir plus bas).
   const commercialsBySociety: Record<string, string[]> = {};
+  // person_id par "société::nom complet" — pour résoudre les équipes projet.
+  const personIdByKey: Record<string, string> = {};
 
   let i = 0;
   for (const [society, team] of Object.entries(RH_SEED_TEAMS)) {
@@ -156,6 +184,8 @@ async function main() {
           },
         },
       });
+
+      personIdByKey[`${society}::${fullName}`] = person.id;
 
       if (isCommercial) {
         await prisma.role.create({
@@ -235,7 +265,116 @@ async function main() {
     }
   }
 
-  console.log(`Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM.`);
+  // Projets : reprend seedProjectsForTenant() du prototype. L'équipe, l'assigné et
+  // l'auteur des commentaires sont toujours résolus en person_id via personIdByKey
+  // (jamais un nom stocké dans un Project/ProjectTask/ProjectTaskComment).
+  let projectsCreated = 0;
+  for (const [society, templates] of Object.entries(PROJECT_SEEDS)) {
+    for (const [idx, tpl] of templates.entries()) {
+      const teamIds = tpl.team.map((name) => personIdByKey[`${society}::${name}`]).filter(Boolean);
+      if (teamIds.length === 0) continue;
+
+      const start = inDays(-20 - idx * 5);
+      const end = inDays(45 + idx * 10);
+      const budget = 40000 + idx * 15000;
+      const lead = teamIds[0];
+      const last = teamIds[teamIds.length - 1];
+
+      const project = await prisma.project.create({
+        data: {
+          society,
+          name: tpl.name,
+          client: tpl.client,
+          status: "actif",
+          startDate: start,
+          endDate: end,
+          budget,
+          members: { create: teamIds.map((personId) => ({ personId })) },
+          expenses: {
+            create: [
+              { label: "Sous-traitance spécialisée", amount: Math.round(budget * 0.18), category: "Prestation", date: inDays(-8) },
+              { label: "Licences logicielles", amount: Math.round(budget * 0.05), category: "Outils", date: inDays(-3) },
+            ],
+          },
+          risks: {
+            create: [
+              {
+                text: "Dépendance à une ressource clé côté client",
+                level: "Modéré",
+                mitigation: "Identifier un contact suppléant.",
+                status: "Ouvert",
+              },
+            ],
+          },
+        },
+      });
+
+      const analyseTask = await prisma.projectTask.create({
+        data: {
+          projectId: project.id,
+          title: "Analyse des besoins",
+          column: "inprogress",
+          sprint: "Sprint 2",
+          assigneeId: lead,
+          dueDate: inDays(5),
+          timeLoggedH: 18,
+          checklist: {
+            create: [
+              { text: "Interviews parties prenantes", done: true },
+              { text: "Synthèse des besoins", done: false },
+            ],
+          },
+        },
+      });
+      await prisma.projectTaskComment.create({
+        data: { taskId: analyseTask.id, authorId: lead, text: "Premier draft partagé au client.", date: inDays(-2) },
+      });
+
+      await prisma.projectTask.create({
+        data: {
+          projectId: project.id,
+          title: "Cadrage & lancement",
+          column: "done",
+          sprint: "Sprint 1",
+          assigneeId: lead,
+          dueDate: inDays(-10),
+          timeLoggedH: 12,
+          checklist: {
+            create: [
+              { text: "Atelier de cadrage", done: true },
+              { text: "Charte projet validée", done: true },
+            ],
+          },
+        },
+      });
+      await prisma.projectTask.create({
+        data: {
+          projectId: project.id,
+          title: "Livrable intermédiaire",
+          column: "review",
+          sprint: "Sprint 2",
+          assigneeId: last,
+          dueDate: inDays(8),
+          timeLoggedH: 6,
+          checklist: { create: [{ text: "Relecture qualité", done: false }] },
+        },
+      });
+      await prisma.projectTask.create({
+        data: {
+          projectId: project.id,
+          title: "Plan de déploiement",
+          column: "todo",
+          sprint: "Sprint 3",
+          assigneeId: last,
+          dueDate: inDays(22),
+        },
+      });
+
+      projectsCreated += 1;
+    }
+  }
+
+  console.log(`Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets.`);
   console.log(`Mot de passe de dev commun à tous les comptes : ${DEV_PASSWORD}`);
   console.log("Comptes RH (habilités à créer des personnes) :", rhAccounts);
 }

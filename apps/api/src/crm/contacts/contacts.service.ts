@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuthenticatedUser } from "../../auth/auth.types";
-import { assertSocietyMember } from "../crm-access.util";
-import { DirectoryLookupService } from "../directory-lookup.service";
+import { assertSocietyMember } from "../../common/access/assert-society-member";
+import { DirectoryLookupService } from "../../directory/directory-lookup.service";
 import { CreateContactDto } from "./dto/create-contact.dto";
 import { UpdateContactDto } from "./dto/update-contact.dto";
 import { QueryContactsDto } from "./dto/query-contacts.dto";

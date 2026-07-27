@@ -48,6 +48,11 @@ model Person {
   contactsHandled CrmContact[] @relation("ContactHandledBy")
   dealsOwned      CrmDeal[]    @relation("DealOwner")
 
+  // Idem pour les Projets : jamais un nom stocké, uniquement des références.
+  projectMemberships  ProjectMember[]
+  tasksAssigned       ProjectTask[]        @relation("TaskAssignee")
+  taskCommentsWritten ProjectTaskComment[] @relation("TaskCommentAuthor")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -212,4 +217,151 @@ model CrmActivity {
 
   @@index([dealId])
   @@map("crm_activities")
+}
+
+// ============================================================
+// PROJETS (Phase 3) — Kanban, Timeline, Budget, Équipe, Risques.
+// Scopé par société, comme le CRM. L'équipe, l'assigné d'une tâche et
+// l'auteur d'un commentaire ne sont JAMAIS un nom en dur : uniquement un
+// person_id résolu via DirectoryLookupService (GET /people?society=).
+// ============================================================
+
+enum ProjectStatus {
+  actif
+  suspendu
+  clos
+}
+
+enum TaskColumn {
+  todo
+  inprogress
+  review
+  done
+}
+
+model Project {
+  id      String        @id @default(uuid())
+  society String
+  name    String
+  client  String?
+  status  ProjectStatus @default(actif)
+
+  startDate DateTime
+  endDate   DateTime
+  budget    Int       @default(0)
+
+  members  ProjectMember[]
+  tasks    ProjectTask[]
+  expenses ProjectExpense[]
+  risks    ProjectRisk[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@map("projects")
+}
+
+/// L'équipe du projet — un person_id par ligne, jamais un nom.
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  personId  String   @map("person_id")
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, personId])
+  @@index([personId])
+  @@map("project_members")
+}
+
+model ProjectTask {
+  id        String     @id @default(uuid())
+  projectId String     @map("project_id")
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  title  String
+  column TaskColumn @default(todo)
+  sprint String?
+
+  assigneeId  String?  @map("assignee_person_id")
+  assignee    Person?  @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  dueDate     DateTime?
+  timeLoggedH Int       @default(0)
+
+  checklist ProjectTaskChecklistItem[]
+  comments  ProjectTaskComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, column])
+  @@map("project_tasks")
+}
+
+model ProjectTaskChecklistItem {
+  id     String      @id @default(uuid())
+  taskId String      @map("task_id")
+  task   ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  text   String
+  done   Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("project_task_checklist_items")
+}
+
+/// L'auteur est toujours l'acteur authentifié qui poste le commentaire
+/// (jamais un champ libre côté client) — voir TasksService.addComment().
+model ProjectTaskComment {
+  id       String      @id @default(uuid())
+  taskId   String      @map("task_id")
+  task     ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId String      @map("author_person_id")
+  author   Person      @relation("TaskCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  text     String
+  date     DateTime    @default(now())
+
+  @@index([taskId])
+  @@map("project_task_comments")
+}
+
+model ProjectExpense {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  label    String
+  amount   Int
+  category String
+  date     DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@map("project_expenses")
+}
+
+/// `level` (Faible/Modéré/Élevé/Critique) et `status` (Ouvert/Clôturé) restent des
+/// String validées côté DTO plutôt que des enums Prisma — les accents ne sont pas
+/// des identifiants d'enum valides, comme pour AffectationStatus historiquement.
+model ProjectRisk {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  text       String
+  level      String
+  mitigation String?
+  status     String  @default("Ouvert")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("project_risks")
 }

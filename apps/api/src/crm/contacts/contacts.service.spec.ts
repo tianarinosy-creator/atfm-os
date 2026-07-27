@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { ContactsService } from "./contacts.service";
-import { DirectoryLookupService } from "../directory-lookup.service";
+import { DirectoryLookupService } from "../../directory/directory-lookup.service";
 import { AuthenticatedUser } from "../../auth/auth.types";
 import { createPrismaMock, PrismaMock } from "../../test/prisma-mock";
 

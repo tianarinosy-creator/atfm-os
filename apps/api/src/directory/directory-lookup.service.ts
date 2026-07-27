@@ -2,10 +2,10 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { PeopleService } from "../people/people.service";
 import { EmployeeView } from "../people/people.types";
 
-/// Le CRM ne stocke jamais sa propre liste de commerciaux : il interroge le Core
-/// Directory (PeopleService, en interne — équivalent d'un GET /people?society=&
-/// department=Commercial) à chaque lecture/écriture. Ce service centralise cette
-/// résolution pour ContactsService et DealsService.
+/// Point d'entrée partagé par tous les modules métier (CRM, Projets, et les
+/// suivants) pour lire le Core Directory — jamais de copie locale des personnes.
+/// Équivalent interne d'un GET /people?society=&department=, sans aller-retour
+/// HTTP puisqu'on est dans le même processus NestJS.
 @Injectable()
 export class DirectoryLookupService {
   constructor(private readonly people: PeopleService) {}
@@ -27,6 +27,24 @@ export class DirectoryLookupService {
       throw new BadRequestException(
         `La personne assignée doit être un Commercial actif chez "${society}".`,
       );
+    }
+  }
+
+  /// Toutes les personnes ayant une affectation (active ou non) chez cette société,
+  /// tous départements confondus — utilisé par les modules qui composent des équipes
+  /// (ex. Projets) plutôt qu'un rôle métier précis comme "Commercial".
+  async loadSocietyMembers(society: string): Promise<Map<string, EmployeeView>> {
+    const employees = (await this.people.findAll({ society })) as EmployeeView[];
+    return new Map(employees.map((e) => [e.personId, e]));
+  }
+
+  /// Empêche d'ajouter à une équipe / d'assigner une tâche à quelqu'un qui n'a pas
+  /// d'affectation active dans cette société — imposé côté API.
+  async assertActiveMember(society: string, personId: string) {
+    const members = await this.loadSocietyMembers(society);
+    const match = members.get(personId);
+    if (!match || match.status !== "Actif") {
+      throw new BadRequestException(`La personne assignée doit être active chez "${society}".`);
     }
   }
 }
