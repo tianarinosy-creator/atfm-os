@@ -123,6 +123,9 @@ export default async function GouvernancePage({ searchParams }: { searchParams: 
           <a href="/rh" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Annuaire
           </a>
+          <a href="/investissements" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            Investissements
+          </a>
           <LogoutButton />
         </div>
       </header>

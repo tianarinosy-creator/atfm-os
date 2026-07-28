@@ -535,3 +535,133 @@ model GovernanceResolution {
   @@index([meetingId])
   @@map("governance_resolutions")
 }
+
+// ============================================================
+// INVESTISSEMENTS (VC) — Phase 3, portée Groupe.
+// Contrairement à tous les modules précédents, aucune colonne `society` ici :
+// le prototype présente ce module sous un bandeau "ATFM Legacy · Vue groupe"
+// (voir InvestissementsMain) — c'est la holding qui pilote le portefeuille de
+// participations pour tout le groupe, pas une filiale isolée. Côté API,
+// l'accès est réservé aux personnes ayant une affectation active chez la
+// société holding ("atfm"), via assertGroupAccess — pas un assertSocietyMember
+// par société cible puisqu'il n'y en a pas.
+// Co-investisseurs (StartupInvestor) et Cap Table (StartupCapTableEntry)
+// restent en texte libre comme en Gouvernance : ce sont souvent des fonds ou
+// personnes hors Core Directory.
+// ============================================================
+
+enum InvestmentStage {
+  sourcing
+  pitch
+  dd
+  termsheet
+  investi
+  refuse
+}
+
+model Startup {
+  id          String          @id @default(uuid())
+  name        String
+  sector      String
+  stage       InvestmentStage @default(sourcing)
+  founder     String
+  description String          @default("")
+
+  pitchNotes        String @default("") @map("pitch_notes")
+  businessPlanNotes String @default("") @map("business_plan_notes")
+
+  /// Statut de Due Diligence ("Non démarrée"/"En cours"/"Terminée") — accentué,
+  /// donc String + @IsIn côté DTO (même raison que ProjectRisk/Finance/Gouvernance).
+  dueDiligenceStatus String @default("Non démarrée") @map("due_diligence_status")
+
+  /// Tour visé ("Pre-seed"/"Seed"/"Série A"...) — accentué → String.
+  round        String @default("Seed")
+  amountTarget Int    @default(0) @map("amount_target")
+  amountRaised Int    @default(0) @map("amount_raised")
+  /// "Non démarrée"/"En cours"/"Clôturée" — accentué → String.
+  roundStatus  String @default("Non démarrée") @map("round_status")
+
+  valuationPreMoney  Int? @map("valuation_pre_money")
+  valuationPostMoney Int? @map("valuation_post_money")
+  currentValuation   Int  @default(0) @map("current_valuation")
+
+  atfmInvested        Int       @default(0) @map("atfm_invested")
+  atfmStakePercentage Int       @default(0) @map("atfm_stake_percentage")
+  dateInvested        DateTime? @map("date_invested")
+
+  dueDiligenceItems StartupDueDiligenceItem[]
+  capTable          StartupCapTableEntry[]
+  investors         StartupInvestor[]
+  history           StartupHistoryEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("startups")
+}
+
+model StartupDueDiligenceItem {
+  id        String  @id @default(uuid())
+  startupId String  @map("startup_id")
+  startup   Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+
+  text String
+  done Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([startupId])
+  @@map("startup_due_diligence_items")
+}
+
+/// Cap table par startup — `investor` en texte libre (fondateurs, business angels,
+/// fonds...), jamais de FK Person (même logique que Shareholder en Gouvernance).
+model StartupCapTableEntry {
+  id        String  @id @default(uuid())
+  startupId String  @map("startup_id")
+  startup   Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+
+  investor   String
+  percentage Int
+  amount     Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([startupId])
+  @@map("startup_cap_table_entries")
+}
+
+/// Co-investisseurs externes d'une startup. La vue "Investisseurs" du module
+/// (agrégation par nom across startups) est calculée à la volée dans le
+/// service, jamais stockée à part (même principe que le Cap Table de
+/// Gouvernance ou l'Historique des décisions).
+model StartupInvestor {
+  id        String  @id @default(uuid())
+  startupId String  @map("startup_id")
+  startup   Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+
+  name    String
+  /// "VC"/"Business Angels"/"Fonds à impact"/"Family Office"/"Corporate VC" — accentué → String.
+  type    String
+  contact String @default("")
+
+  createdAt DateTime @default(now())
+
+  @@index([startupId])
+  @@map("startup_investors")
+}
+
+model StartupHistoryEvent {
+  id        String  @id @default(uuid())
+  startupId String  @map("startup_id")
+  startup   Startup @relation(fields: [startupId], references: [id], onDelete: Cascade)
+
+  event       String
+  description String   @default("")
+  date        DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([startupId])
+  @@map("startup_history_events")
+}

@@ -210,6 +210,208 @@ const GOVERNANCE_SEEDS: Record<string, { valuation: number; board: BoardSeed[]; 
   creatic: { valuation: 7_600_000, board: genericBoard(["Amélie Nguyen", "Victor Vidal"]), shareholders: GENERIC_SHAREHOLDERS },
 };
 
+// Reprend seedInvestments() du prototype — portée Groupe, pas de society.
+interface StartupSeed {
+  name: string;
+  sector: string;
+  stage: "sourcing" | "pitch" | "dd" | "termsheet" | "investi" | "refuse";
+  founder: string;
+  description: string;
+  pitchNotes: string;
+  businessPlanNotes: string;
+  dueDiligenceStatus: string;
+  dueDiligenceChecklist: { text: string; done: boolean }[];
+  round: string;
+  amountTarget: number;
+  amountRaised: number;
+  roundStatus: string;
+  valuationPreMoney: number | null;
+  valuationPostMoney: number | null;
+  currentValuation: number;
+  atfmInvested: number;
+  atfmStakePercentage: number;
+  dateInvestedInDays: number | null;
+  capTable: { investor: string; percentage: number; amount: number }[];
+  investors: { name: string; type: string; contact: string }[];
+  history: { event: string; description: string; dateInDays: number }[];
+}
+
+const INVESTMENT_SEEDS: StartupSeed[] = [
+  {
+    name: "NovaFret",
+    sector: "Logistique verte",
+    stage: "investi",
+    founder: "Yasmine Touré",
+    description: "Plateforme d'optimisation de tournées pour flottes de livraison électriques.",
+    pitchNotes: "Deck solide, traction B2B forte auprès de 3 grands comptes retail. Équipe technique expérimentée.",
+    businessPlanNotes: "Objectif de rentabilité à 18 mois, marché adressable estimé à 400M€ en France.",
+    dueDiligenceStatus: "Terminée",
+    dueDiligenceChecklist: [
+      { text: "Audit financier", done: true },
+      { text: "Vérification des contrats clients", done: true },
+      { text: "Due diligence juridique", done: true },
+    ],
+    round: "Série A",
+    amountTarget: 3_000_000,
+    amountRaised: 3_000_000,
+    roundStatus: "Clôturée",
+    valuationPreMoney: 9_000_000,
+    valuationPostMoney: 12_000_000,
+    currentValuation: 18_000_000,
+    atfmInvested: 1_200_000,
+    atfmStakePercentage: 10,
+    dateInvestedInDays: -380,
+    capTable: [
+      { investor: "ATFM Legacy", percentage: 10, amount: 1_200_000 },
+      { investor: "Fondateurs", percentage: 55, amount: 0 },
+      { investor: "Business Angels", percentage: 15, amount: 1_800_000 },
+      { investor: "Kima Ventures", percentage: 20, amount: 0 },
+    ],
+    investors: [
+      { name: "Kima Ventures", type: "VC", contact: "contact@kimaventures.com" },
+      { name: "Business Angels Réseau Est", type: "Business Angels", contact: "réseau-est@ba.fr" },
+    ],
+    history: [
+      { event: "Investissement", description: "Clôture de la Série A à 12M€ post-money, ATFM investit 1,2M€.", dateInDays: -380 },
+      { event: "Valorisation", description: "Nouvelle valorisation à 18M€ suite à la levée de contrats stratégiques.", dateInDays: -90 },
+    ],
+  },
+  {
+    name: "Mira Health",
+    sector: "Impact & Santé",
+    stage: "investi",
+    founder: "Dr. Antoine Vidal",
+    description: "Téléconsultation dédiée aux zones rurales sous-dotées médicalement.",
+    pitchNotes: "Fort impact social, mission alignée avec Havanana Impact. Monétisation encore à consolider.",
+    businessPlanNotes: "Partenariats en cours avec 12 collectivités, subventions ADEME/régionales en discussion.",
+    dueDiligenceStatus: "Terminée",
+    dueDiligenceChecklist: [
+      { text: "Audit financier", done: true },
+      { text: "Vérification conformité RGPD/santé", done: true },
+    ],
+    round: "Seed",
+    amountTarget: 1_200_000,
+    amountRaised: 1_200_000,
+    roundStatus: "Clôturée",
+    valuationPreMoney: 3_800_000,
+    valuationPostMoney: 5_000_000,
+    currentValuation: 6_200_000,
+    atfmInvested: 500_000,
+    atfmStakePercentage: 10,
+    dateInvestedInDays: -210,
+    capTable: [
+      { investor: "ATFM Legacy", percentage: 10, amount: 500_000 },
+      { investor: "Fondateurs", percentage: 70, amount: 0 },
+      { investor: "Impact Partners", percentage: 20, amount: 700_000 },
+    ],
+    investors: [{ name: "Impact Partners", type: "Fonds à impact", contact: "invest@impactpartners.fr" }],
+    history: [{ event: "Investissement", description: "Clôture du Seed à 5M€ post-money, ATFM investit 500K€.", dateInDays: -210 }],
+  },
+  {
+    name: "Reelio",
+    sector: "Production audiovisuelle",
+    stage: "termsheet",
+    founder: "Camille Faure",
+    description: "Plateforme de financement participatif dédiée aux courts et longs métrages indépendants.",
+    pitchNotes: "Traction communautaire forte, mais dépendance à un unique canal d'acquisition à surveiller.",
+    businessPlanNotes: "Modèle de commission à 8% sur les fonds levés, break-even projeté à 24 mois.",
+    dueDiligenceStatus: "En cours",
+    dueDiligenceChecklist: [
+      { text: "Audit financier", done: true },
+      { text: "Vérification des CGU/plateforme", done: false },
+      { text: "Analyse de la concurrence", done: true },
+    ],
+    round: "Seed",
+    amountTarget: 900_000,
+    amountRaised: 600_000,
+    roundStatus: "En cours",
+    valuationPreMoney: 3_200_000,
+    valuationPostMoney: 4_100_000,
+    currentValuation: 4_100_000,
+    atfmInvested: 0,
+    atfmStakePercentage: 0,
+    dateInvestedInDays: null,
+    capTable: [{ investor: "Fondateurs", percentage: 100, amount: 0 }],
+    investors: [],
+    history: [{ event: "Term Sheet", description: "Term sheet signée pour un investissement de 400K€, en attente de clôture.", dateInDays: -15 }],
+  },
+  {
+    name: "Ledgr",
+    sector: "Fintech / Tech",
+    stage: "dd",
+    founder: "Samir Belkaïd",
+    description: "Outil de rapprochement comptable automatisé par IA pour PME.",
+    pitchNotes: "Produit encore en beta, deck à consolider sur les métriques de rétention.",
+    businessPlanNotes: "Pricing SaaS envisagé à 199€/mois, marché cible : 40 000 PME françaises.",
+    dueDiligenceStatus: "En cours",
+    dueDiligenceChecklist: [
+      { text: "Audit financier", done: false },
+      { text: "Test produit avec un client pilote", done: true },
+    ],
+    round: "Pre-seed",
+    amountTarget: 500_000,
+    amountRaised: 150_000,
+    roundStatus: "En cours",
+    valuationPreMoney: 2_000_000,
+    valuationPostMoney: 2_500_000,
+    currentValuation: 2_500_000,
+    atfmInvested: 0,
+    atfmStakePercentage: 0,
+    dateInvestedInDays: null,
+    capTable: [{ investor: "Fondateurs", percentage: 100, amount: 0 }],
+    investors: [],
+    history: [],
+  },
+  {
+    name: "Urbanest",
+    sector: "Immobilier / PropTech",
+    stage: "pitch",
+    founder: "Lucie Barbier",
+    description: "Marketplace de coliving pour jeunes actifs dans les métropoles secondaires.",
+    pitchNotes: "Premier échange prometteur, pitch deck reçu, à challenger sur la scalabilité opérationnelle.",
+    businessPlanNotes: "",
+    dueDiligenceStatus: "Non démarrée",
+    dueDiligenceChecklist: [],
+    round: "Seed",
+    amountTarget: 1_000_000,
+    amountRaised: 0,
+    roundStatus: "Non démarrée",
+    valuationPreMoney: 3_500_000,
+    valuationPostMoney: null,
+    currentValuation: 3_500_000,
+    atfmInvested: 0,
+    atfmStakePercentage: 0,
+    dateInvestedInDays: null,
+    capTable: [{ investor: "Fondateurs", percentage: 100, amount: 0 }],
+    investors: [],
+    history: [],
+  },
+  {
+    name: "GreenPallet",
+    sector: "Logistique circulaire",
+    stage: "sourcing",
+    founder: "Nicolas Ferreira",
+    description: "Location de palettes réutilisables consignées pour la grande distribution.",
+    pitchNotes: "",
+    businessPlanNotes: "",
+    dueDiligenceStatus: "Non démarrée",
+    dueDiligenceChecklist: [],
+    round: "Seed",
+    amountTarget: 800_000,
+    amountRaised: 0,
+    roundStatus: "Non démarrée",
+    valuationPreMoney: null,
+    valuationPostMoney: null,
+    currentValuation: 0,
+    atfmInvested: 0,
+    atfmStakePercentage: 0,
+    dateInvestedInDays: null,
+    capTable: [],
+    investors: [],
+    history: [],
+  },
+];
+
 async function main() {
   const today = Date.now();
   const inDays = (n: number) => new Date(today + n * 86_400_000);
@@ -551,8 +753,40 @@ async function main() {
     meetingsCreated += 2;
   }
 
+  // Investissements (VC) — portée Groupe, reprend seedInvestments() du prototype.
+  let startupsCreated = 0;
+  for (const s of INVESTMENT_SEEDS) {
+    await prisma.startup.create({
+      data: {
+        name: s.name,
+        sector: s.sector,
+        stage: s.stage,
+        founder: s.founder,
+        description: s.description,
+        pitchNotes: s.pitchNotes,
+        businessPlanNotes: s.businessPlanNotes,
+        dueDiligenceStatus: s.dueDiligenceStatus,
+        round: s.round,
+        amountTarget: s.amountTarget,
+        amountRaised: s.amountRaised,
+        roundStatus: s.roundStatus,
+        valuationPreMoney: s.valuationPreMoney,
+        valuationPostMoney: s.valuationPostMoney,
+        currentValuation: s.currentValuation,
+        atfmInvested: s.atfmInvested,
+        atfmStakePercentage: s.atfmStakePercentage,
+        dateInvested: s.dateInvestedInDays === null ? null : inDays(s.dateInvestedInDays),
+        dueDiligenceItems: { create: s.dueDiligenceChecklist.map((c) => ({ text: c.text, done: c.done })) },
+        capTable: { create: s.capTable },
+        investors: { create: s.investors },
+        history: { create: s.history.map((h) => ({ event: h.event, description: h.description, date: inDays(h.dateInDays) })) },
+      },
+    });
+    startupsCreated++;
+  }
+
   console.log(
-    `Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets, ${invoicesCreated} factures, ${meetingsCreated} réunions de gouvernance.`,
+    `Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets, ${invoicesCreated} factures, ${meetingsCreated} réunions de gouvernance, ${startupsCreated} startups (Investissements).`,
   );
   console.log(`Mot de passe de dev commun à tous les comptes : ${DEV_PASSWORD}`);
   console.log("Comptes RH (habilités à créer des personnes) :", rhAccounts);

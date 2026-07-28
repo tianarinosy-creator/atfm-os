@@ -112,6 +112,26 @@ export function createPrismaMock() {
       create: jest.fn(),
       update: jest.fn(),
     },
+    startup: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    startupDueDiligenceItem: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    startupCapTableEntry: {
+      create: jest.fn(),
+    },
+    startupInvestor: {
+      create: jest.fn(),
+    },
+    startupHistoryEvent: {
+      create: jest.fn(),
+    },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
 
