@@ -123,6 +123,9 @@ export default async function FinancePage({ searchParams }: { searchParams: { so
           <a href="/rh" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Annuaire
           </a>
+          <a href="/gouvernance" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            Gouvernance
+          </a>
           <LogoutButton />
         </div>
       </header>

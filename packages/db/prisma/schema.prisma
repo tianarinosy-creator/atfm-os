@@ -434,3 +434,104 @@ model FinanceBudget {
   @@index([society])
   @@map("finance_budgets")
 }
+
+// ============================================================
+// GOUVERNANCE (Phase 3) — organigramme du Conseil, actionnariat/cap table,
+// assemblées & résolutions, PV, historique des décisions.
+// Scopé par société. À la différence du CRM/Projets, membres du Conseil et
+// actionnaires restent en texte libre (jamais de FK Person) : un Conseil peut
+// inclure des personnes hors Core Directory (administrateurs indépendants,
+// représentants d'investisseurs) — le prototype ne les lie à aucune personne
+// interne, et la Gouvernance n'apparaît pas dans la liste des modules tenus
+// d'utiliser "Sélectionner une personne existante" (section 5 du dossier).
+// ============================================================
+
+enum BoardRole {
+  presidence
+  direction
+  administrateur
+}
+
+enum MeetingType {
+  ca
+  ag
+}
+
+/// Une ligne par société — valorisation courante utilisée pour calculer la
+/// valeur estimée de chaque actionnaire dans le cap table.
+model GovernanceValuation {
+  society   String   @id
+  valuation Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model BoardMember {
+  id      String    @id @default(uuid())
+  society String
+
+  name  String
+  role  BoardRole
+  title String
+  since String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@map("governance_board_members")
+}
+
+/// `type` ("Personne"/"Société") reste une String — mêmes raisons d'accents
+/// que pour ProjectRisk/FinanceInvoice.
+model Shareholder {
+  id      String @id @default(uuid())
+  society String
+
+  name       String
+  type       String
+  percentage Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@map("governance_shareholders")
+}
+
+model GovernanceMeeting {
+  id      String      @id @default(uuid())
+  society String
+
+  type   MeetingType
+  title  String
+  date   DateTime
+  status String      @default("Planifiée")
+  agenda String[]
+  minutes String     @default("")
+
+  resolutions GovernanceResolution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@map("governance_meetings")
+}
+
+model GovernanceResolution {
+  id        String            @id @default(uuid())
+  meetingId String            @map("meeting_id")
+  meeting   GovernanceMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  text          String
+  votesFor      Int    @default(0)
+  votesAgainst  Int    @default(0)
+  votesAbstain  Int    @default(0)
+  status        String @default("En délibération")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([meetingId])
+  @@map("governance_resolutions")
+}

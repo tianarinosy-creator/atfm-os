@@ -85,6 +85,33 @@ export function createPrismaMock() {
       findMany: jest.fn(),
       create: jest.fn(),
     },
+    boardMember: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+    },
+    shareholder: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+    },
+    governanceValuation: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+    },
+    governanceMeeting: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    governanceResolution: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
 

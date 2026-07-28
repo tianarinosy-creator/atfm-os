@@ -163,6 +163,53 @@ const FINANCE_BUDGET_SEEDS = [
   { category: "Marketing", budgeted: 5000 },
 ];
 
+// Reprend seedGovernanceForTenant() du prototype. Membres du Conseil et
+// actionnaires en texte libre (voir commentaire du schéma) : un Conseil peut
+// inclure des personnes hors Core Directory.
+type BoardSeed = { name: string; role: "presidence" | "direction" | "administrateur"; title: string; since: string };
+type ShareholderSeed = { name: string; type: string; percentage: number };
+
+function genericBoard(names: string[]): BoardSeed[] {
+  return names.map((name, i) => ({
+    name,
+    role: i === 0 ? "presidence" : i === 1 ? "direction" : "administrateur",
+    title: i === 0 ? "Président" : i === 1 ? "Directeur Général" : "Administrateur",
+    since: String(2021 + (i % 3)),
+  }));
+}
+
+const GENERIC_SHAREHOLDERS: ShareholderSeed[] = [
+  { name: "ATFM Legacy (holding)", type: "Société", percentage: 65 },
+  { name: "Management local", type: "Personne", percentage: 20 },
+  { name: "Investisseurs tiers", type: "Société", percentage: 15 },
+];
+
+const GOVERNANCE_SEEDS: Record<string, { valuation: number; board: BoardSeed[]; shareholders: ShareholderSeed[] }> = {
+  atfm: {
+    valuation: 42_000_000,
+    board: [
+      { name: "Alexandre Ferrand", role: "presidence", title: "Président du Conseil", since: "2019" },
+      { name: "Marion Costa", role: "direction", title: "Directrice Générale", since: "2020" },
+      { name: "Marc Delacroix", role: "administrateur", title: "Administrateur indépendant", since: "2021" },
+      { name: "Sophie Renard", role: "administrateur", title: "Administratrice — Bpifrance", since: "2022" },
+    ],
+    shareholders: [
+      { name: "Alexandre Ferrand", type: "Personne", percentage: 38 },
+      { name: "Famille Ferrand (Holding perso.)", type: "Société", percentage: 22 },
+      { name: "Bpifrance", type: "Société", percentage: 15 },
+      { name: "Management (pool)", type: "Personne", percentage: 10 },
+      { name: "Investisseurs minoritaires", type: "Société", percentage: 15 },
+    ],
+  },
+  logistics: { valuation: 18_500_000, board: genericBoard(["Karim Fassi", "Elodie Vasseur", "Julien Roche"]), shareholders: GENERIC_SHAREHOLDERS },
+  housing: { valuation: 26_000_000, board: genericBoard(["Nadia Belkacem", "Thomas Girard"]), shareholders: GENERIC_SHAREHOLDERS },
+  films: { valuation: 9_800_000, board: genericBoard(["Claire Aubert", "Yanis Cherif"]), shareholders: GENERIC_SHAREHOLDERS },
+  tech: { valuation: 31_000_000, board: genericBoard(["Léa Fontaine", "Hugo Marchand", "Inès Zeroual"]), shareholders: GENERIC_SHAREHOLDERS },
+  impact: { valuation: 4_200_000, board: genericBoard(["Paul Lemercier"]), shareholders: GENERIC_SHAREHOLDERS },
+  dsfamily: { valuation: 15_000_000, board: genericBoard(["Dominique Serrano"]), shareholders: GENERIC_SHAREHOLDERS },
+  creatic: { valuation: 7_600_000, board: genericBoard(["Amélie Nguyen", "Victor Vidal"]), shareholders: GENERIC_SHAREHOLDERS },
+};
+
 async function main() {
   const today = Date.now();
   const inDays = (n: number) => new Date(today + n * 86_400_000);
@@ -450,8 +497,62 @@ async function main() {
     }
   }
 
+  // Gouvernance : organigramme du Conseil, actionnariat, assemblées &
+  // résolutions — reprend seedGovernanceForTenant() du prototype (les deux
+  // mêmes réunions génériques sont répliquées pour chaque société, comme
+  // dans le prototype qui ne les personnalisait pas par tenant).
+  let meetingsCreated = 0;
+  for (const [society, seed] of Object.entries(GOVERNANCE_SEEDS)) {
+    await prisma.governanceValuation.create({ data: { society, valuation: seed.valuation } });
+
+    for (const member of seed.board) {
+      await prisma.boardMember.create({
+        data: { society, name: member.name, role: member.role, title: member.title, since: member.since },
+      });
+    }
+
+    for (const sh of seed.shareholders) {
+      await prisma.shareholder.create({
+        data: { society, name: sh.name, type: sh.type, percentage: sh.percentage },
+      });
+    }
+
+    await prisma.governanceMeeting.create({
+      data: {
+        society,
+        type: "ca",
+        title: "Conseil d'administration — Revue trimestrielle",
+        date: inDays(-25),
+        status: "Tenue",
+        agenda: ["Approbation des comptes du trimestre", "Point sur les filiales", "Validation du budget prévisionnel"],
+        minutes:
+          "Le Conseil s'est réuni en session ordinaire. Les comptes du trimestre ont été présentés et approuvés à l'unanimité. Le budget prévisionnel 2027 a été discuté et adopté à la majorité.",
+        resolutions: {
+          create: [
+            { text: "Approbation des comptes du T2", votesFor: 4, votesAgainst: 0, votesAbstain: 0, status: "Adoptée" },
+            { text: "Validation du budget prévisionnel 2027", votesFor: 3, votesAgainst: 1, votesAbstain: 0, status: "Adoptée" },
+          ],
+        },
+      },
+    });
+    await prisma.governanceMeeting.create({
+      data: {
+        society,
+        type: "ag",
+        title: "Assemblée générale ordinaire annuelle",
+        date: inDays(20),
+        status: "Planifiée",
+        agenda: ["Rapport de gestion", "Affectation du résultat", "Renouvellement des mandats"],
+        resolutions: {
+          create: [{ text: "Renouvellement du mandat du Président", votesFor: 0, votesAgainst: 0, votesAbstain: 0, status: "En délibération" }],
+        },
+      },
+    });
+    meetingsCreated += 2;
+  }
+
   console.log(
-    `Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets, ${invoicesCreated} factures.`,
+    `Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets, ${invoicesCreated} factures, ${meetingsCreated} réunions de gouvernance.`,
   );
   console.log(`Mot de passe de dev commun à tous les comptes : ${DEV_PASSWORD}`);
   console.log("Comptes RH (habilités à créer des personnes) :", rhAccounts);
