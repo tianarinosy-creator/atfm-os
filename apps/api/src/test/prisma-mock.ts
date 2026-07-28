@@ -132,6 +132,12 @@ export function createPrismaMock() {
     startupHistoryEvent: {
       create: jest.fn(),
     },
+    document: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
 

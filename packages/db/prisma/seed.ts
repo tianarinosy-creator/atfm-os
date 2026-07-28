@@ -412,6 +412,98 @@ const INVESTMENT_SEEDS: StartupSeed[] = [
   },
 ];
 
+// Reprend seedDocumentsForTenant() du prototype — GED par société. `owner` est
+// résolu vers un person_id existant de l'équipe (personIdByKey), jamais un nom
+// de service en texte libre comme dans le prototype : le dossier de passation
+// (section 5) cite "Documents" parmi les modules devant "Sélectionner une
+// personne existante".
+const DOC_CLIENTS_BY_SOCIETY: Record<string, string> = {
+  atfm: "Cabinet Delacroix & Associés",
+  logistics: "Transalliance",
+  housing: "Nexity",
+  films: "Canal+",
+  tech: "Decathlon",
+  impact: "ADEME",
+  dsfamily: "Serrano Family Office",
+  creatic: "L'Oréal",
+};
+
+interface DocumentSeedTemplate {
+  name: (client: string) => string;
+  category: "Contrats" | "Gouvernance" | "Finance" | "RH" | "Projets";
+  version: number;
+  dateInDays: number;
+  permissions: string;
+  archived: boolean;
+  signatureStatus: string | null;
+}
+
+const DOCUMENT_SEED_TEMPLATES: DocumentSeedTemplate[] = [
+  {
+    name: (c) => `Contrat de prestation — ${c}`,
+    category: "Contrats",
+    version: 2,
+    dateInDays: -12,
+    permissions: "Restreint",
+    archived: false,
+    signatureStatus: "Signé",
+  },
+  {
+    name: () => "PV Conseil d'administration — Revue trimestrielle",
+    category: "Gouvernance",
+    version: 1,
+    dateInDays: -25,
+    permissions: "Direction uniquement",
+    archived: false,
+    signatureStatus: null,
+  },
+  {
+    name: () => "Facture émise — T2",
+    category: "Finance",
+    version: 1,
+    dateInDays: -18,
+    permissions: "Restreint",
+    archived: false,
+    signatureStatus: null,
+  },
+  {
+    name: () => "Budget prévisionnel 2027",
+    category: "Finance",
+    version: 3,
+    dateInDays: -6,
+    permissions: "Direction uniquement",
+    archived: false,
+    signatureStatus: null,
+  },
+  {
+    name: () => "Fiche de poste — Recrutement en cours",
+    category: "RH",
+    version: 1,
+    dateInDays: -9,
+    permissions: "Public interne",
+    archived: false,
+    signatureStatus: null,
+  },
+  {
+    name: () => "Cahier des charges — Projet en cours",
+    category: "Projets",
+    version: 4,
+    dateInDays: -3,
+    permissions: "Public interne",
+    archived: false,
+    signatureStatus: null,
+  },
+  {
+    name: () => "Ancien contrat cadre (résilié)",
+    category: "Contrats",
+    version: 1,
+    dateInDays: -400,
+    permissions: "Restreint",
+    archived: true,
+    signatureStatus: "Signé",
+  },
+];
+
 async function main() {
   const today = Date.now();
   const inDays = (n: number) => new Date(today + n * 86_400_000);
@@ -785,8 +877,32 @@ async function main() {
     startupsCreated++;
   }
 
+  // Documents (GED) — reprend seedDocumentsForTenant() pour chaque société.
+  let documentsCreated = 0;
+  for (const society of Object.keys(RH_SEED_TEAMS)) {
+    const teamIds = RH_SEED_TEAMS[society].map(([fullName]) => personIdByKey[`${society}::${fullName}`]);
+    const client = DOC_CLIENTS_BY_SOCIETY[society] ?? "Client";
+
+    for (const [idx, tpl] of DOCUMENT_SEED_TEMPLATES.entries()) {
+      await prisma.document.create({
+        data: {
+          society,
+          name: tpl.name(client),
+          category: tpl.category,
+          version: tpl.version,
+          updatedDate: inDays(tpl.dateInDays),
+          ownerPersonId: teamIds[idx % teamIds.length],
+          permissions: tpl.permissions,
+          archived: tpl.archived,
+          signatureStatus: tpl.signatureStatus,
+        },
+      });
+      documentsCreated++;
+    }
+  }
+
   console.log(
-    `Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets, ${invoicesCreated} factures, ${meetingsCreated} réunions de gouvernance, ${startupsCreated} startups (Investissements).`,
+    `Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets, ${invoicesCreated} factures, ${meetingsCreated} réunions de gouvernance, ${startupsCreated} startups (Investissements), ${documentsCreated} documents (GED).`,
   );
   console.log(`Mot de passe de dev commun à tous les comptes : ${DEV_PASSWORD}`);
   console.log("Comptes RH (habilités à créer des personnes) :", rhAccounts);

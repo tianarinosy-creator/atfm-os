@@ -18,5 +18,6 @@ export const config = {
     "/finance/:path*",
     "/gouvernance/:path*",
     "/investissements/:path*",
+    "/documents/:path*",
   ],
 };

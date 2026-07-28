@@ -53,6 +53,11 @@ model Person {
   tasksAssigned       ProjectTask[]        @relation("TaskAssignee")
   taskCommentsWritten ProjectTaskComment[] @relation("TaskCommentAuthor")
 
+  // Documents (GED) — le dossier de passation (section 5) cite explicitement
+  // Documents parmi les modules devant "Sélectionner une personne existante" :
+  // le propriétaire d'un document est donc un person_id, jamais un nom libre.
+  documentsOwned Document[] @relation("DocumentOwner")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -664,4 +669,53 @@ model StartupHistoryEvent {
 
   @@index([startupId])
   @@map("startup_history_events")
+}
+
+// ============================================================
+// DOCUMENTS (GED) — Phase 3, par société (comme le CRM/Projets/Finance).
+// `category` reprend DOC_CATEGORIES du prototype : mots simples sans accent,
+// valides comme identifiants d'enum (contrairement à DOC_PERMISSIONS et
+// signatureStatus, accentués/avec espaces → String + @IsIn côté DTO).
+// `ownerPersonId` est un person_id du Core Directory : le dossier de
+// passation (section 5) cite "Documents" parmi les modules qui doivent
+// "Sélectionner une personne existante" plutôt que stocker un nom libre —
+// résolu via DirectoryLookupService, jamais un nom copié en dur.
+// ============================================================
+
+enum DocumentCategory {
+  Contrats
+  Gouvernance
+  Finance
+  RH
+  Projets
+}
+
+model Document {
+  id      String @id @default(uuid())
+  society String
+
+  name     String
+  category DocumentCategory
+  version  Int              @default(1)
+
+  /// Mise à jour uniquement par une nouvelle version (voir DocumentsService.newVersion) —
+  /// jamais touchée par l'archivage, le cycle de permissions ou la signature.
+  updatedDate DateTime @default(now()) @map("updated_date")
+
+  ownerPersonId String @map("owner_person_id")
+  owner         Person @relation("DocumentOwner", fields: [ownerPersonId], references: [id], onDelete: Cascade)
+
+  /// "Public interne"/"Restreint"/"Direction uniquement" — espaces → String + @IsIn.
+  permissions String @default("Public interne")
+  archived    Boolean @default(false)
+
+  /// "Signé"/"En attente", ou null si la catégorie n'implique pas de signature
+  /// (seuls les Contrats en ont une à la création, voir DocumentsService.create).
+  signatureStatus String? @map("signature_status")
+
+  createdAt DateTime @default(now())
+
+  @@index([society])
+  @@index([society, category])
+  @@map("documents")
 }

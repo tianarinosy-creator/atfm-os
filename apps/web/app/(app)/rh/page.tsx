@@ -66,6 +66,9 @@ export default async function RhAnnuairePage() {
           <a href="/investissements" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Investissements
           </a>
+          <a href="/documents" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            Documents
+          </a>
           <LogoutButton />
         </div>
       </header>
