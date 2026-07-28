@@ -69,6 +69,22 @@ export function createPrismaMock() {
       create: jest.fn(),
       update: jest.fn(),
     },
+    financeInvoice: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    financeExpense: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    financeBudget: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+    },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
 

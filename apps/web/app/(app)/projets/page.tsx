@@ -69,6 +69,9 @@ export default async function ProjectsPage({ searchParams }: { searchParams: { s
           <a href="/rh" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Annuaire
           </a>
+          <a href="/finance" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            Finance
+          </a>
           <LogoutButton />
         </div>
       </header>

@@ -134,6 +134,35 @@ const PROJECT_SEEDS: Record<string, { name: string; client: string; team: string
   ],
 };
 
+// Reprend seedFinanceForTenant() du prototype. Aucune référence Core Directory :
+// "client" est une société externe en texte libre, comme dans le prototype.
+const FINANCE_SECONDARY_CURRENCY: Record<string, "USD" | "GBP"> = { films: "USD", tech: "GBP" };
+const FINANCE_CLIENTS_BY_SOCIETY: Record<string, string[]> = {
+  atfm: ["Cabinet Delacroix & Associés", "Bpifrance"],
+  logistics: ["Transalliance", "Carrefour Supply Chain", "Geodis"],
+  housing: ["Nexity", "Foncia"],
+  films: ["Canal+", "StudioCanal"],
+  tech: ["Decathlon", "AXA", "Doctolib"],
+  impact: ["ADEME"],
+  dsfamily: ["Serrano Family Office"],
+  creatic: ["L'Oréal", "LVMH"],
+};
+const FINANCE_INVOICE_VALUES_CYCLE = [8000, 15000, 24000, 42000, 60000, 12000];
+const FINANCE_EXPENSE_SEEDS: { label: string; amount: number; daysAgo: number; category: string; status: string; useSecondaryCurrency?: boolean }[] = [
+  { label: "Salaires équipe", amount: 22000, daysAgo: 15, category: "Personnel", status: "Payée" },
+  { label: "Sous-traitance spécialisée", amount: 6800, daysAgo: 22, category: "Prestation", status: "Payée" },
+  { label: "Loyer bureaux", amount: 3200, daysAgo: 5, category: "Loyer", status: "Payée" },
+  { label: "Licences SaaS", amount: 1450, daysAgo: 8, category: "Outils & Licences", status: "En attente" },
+  { label: "Campagne acquisition", amount: 4200, daysAgo: 12, category: "Marketing", status: "Payée", useSecondaryCurrency: true },
+];
+const FINANCE_BUDGET_SEEDS = [
+  { category: "Personnel", budgeted: 26000 },
+  { category: "Prestation", budgeted: 8000 },
+  { category: "Loyer", budgeted: 3200 },
+  { category: "Outils & Licences", budgeted: 1800 },
+  { category: "Marketing", budgeted: 5000 },
+];
+
 async function main() {
   const today = Date.now();
   const inDays = (n: number) => new Date(today + n * 86_400_000);
@@ -374,7 +403,56 @@ async function main() {
     }
   }
 
-  console.log(`Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets.`);
+  // Finance : factures + dépenses + budgets par société, reprenant
+  // seedFinanceForTenant() du prototype (multi-devises selon la société).
+  let invoicesCreated = 0;
+  for (const [society, clients] of Object.entries(FINANCE_CLIENTS_BY_SOCIETY)) {
+    const secondaryCurrency = FINANCE_SECONDARY_CURRENCY[society] ?? "EUR";
+
+    for (const [idx, client] of clients.entries()) {
+      const currency = idx % 3 === 0 ? secondaryCurrency : "EUR";
+      const amount = FINANCE_INVOICE_VALUES_CYCLE[idx % FINANCE_INVOICE_VALUES_CYCLE.length];
+      const status = idx % 4 === 0 ? "En retard" : idx % 3 === 0 ? "En attente" : "Payée";
+
+      await prisma.financeInvoice.create({
+        data: {
+          society,
+          client,
+          amount,
+          currency,
+          status,
+          issueDate: inDays(-40 + idx * 6),
+          dueDate: inDays(-10 + idx * 6),
+          category: "Vente de services",
+        },
+      });
+      invoicesCreated += 1;
+    }
+
+    for (const seed of FINANCE_EXPENSE_SEEDS) {
+      await prisma.financeExpense.create({
+        data: {
+          society,
+          label: seed.label,
+          amount: seed.amount,
+          currency: seed.useSecondaryCurrency ? secondaryCurrency : "EUR",
+          category: seed.category,
+          date: inDays(-seed.daysAgo),
+          status: seed.status,
+        },
+      });
+    }
+
+    for (const budget of FINANCE_BUDGET_SEEDS) {
+      await prisma.financeBudget.create({
+        data: { society, category: budget.category, budgeted: budget.budgeted, period: "Mensuel" },
+      });
+    }
+  }
+
+  console.log(
+    `Seed terminé : ${i} personnes créées, ${dealsCreated} contacts/affaires CRM, ${projectsCreated} projets, ${invoicesCreated} factures.`,
+  );
   console.log(`Mot de passe de dev commun à tous les comptes : ${DEV_PASSWORD}`);
   console.log("Comptes RH (habilités à créer des personnes) :", rhAccounts);
 }

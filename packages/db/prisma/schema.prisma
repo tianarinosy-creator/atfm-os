@@ -365,3 +365,72 @@ model ProjectRisk {
   @@index([projectId])
   @@map("project_risks")
 }
+
+// ============================================================
+// FINANCE (Phase 3) — factures, dépenses, budgets, cash flow multi-devises.
+// Scopé par société. Aucune référence au Core Directory ici : le prototype
+// ne lie ni facture ni dépense à une personne interne (client = société
+// externe, en texte libre) — rien à résoudre via DirectoryLookupService.
+// ============================================================
+
+enum Currency {
+  EUR
+  USD
+  GBP
+}
+
+/// `status` (En attente/Payée/En retard, Payée/En attente) reste une String
+/// validée côté DTO — mêmes raisons d'accents que ProjectRisk.
+model FinanceInvoice {
+  id      String   @id @default(uuid())
+  society String
+
+  client   String
+  amount   Int
+  currency Currency @default(EUR)
+  status   String   @default("En attente")
+
+  issueDate DateTime
+  dueDate   DateTime
+  category  String   @default("Vente de services")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@map("finance_invoices")
+}
+
+model FinanceExpense {
+  id      String   @id @default(uuid())
+  society String
+
+  label    String
+  amount   Int
+  currency Currency @default(EUR)
+  category String
+  date     DateTime
+  status   String   @default("Payée")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@index([society, category])
+  @@map("finance_expenses")
+}
+
+model FinanceBudget {
+  id      String @id @default(uuid())
+  society String
+
+  category String
+  budgeted Int
+  period   String @default("Mensuel")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([society])
+  @@map("finance_budgets")
+}
