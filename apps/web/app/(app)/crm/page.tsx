@@ -98,6 +98,9 @@ export default async function CrmPipelinePage({
           <a href="/documents" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Documents
           </a>
+          <a href="/bi" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            BI
+          </a>
           <LogoutButton />
         </div>
       </header>

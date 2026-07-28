@@ -19,5 +19,6 @@ export const config = {
     "/gouvernance/:path*",
     "/investissements/:path*",
     "/documents/:path*",
+    "/bi/:path*",
   ],
 };

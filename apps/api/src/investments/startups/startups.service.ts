@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuthenticatedUser } from "../../auth/auth.types";
-import { assertGroupAccess } from "../investments-access.util";
+import { assertGroupAccess } from "../../common/access/assert-group-access";
 import { QueryStartupsDto } from "./dto/query-startups.dto";
 import { CreateStartupDto } from "./dto/create-startup.dto";
 import { UpdateStartupDto } from "./dto/update-startup.dto";

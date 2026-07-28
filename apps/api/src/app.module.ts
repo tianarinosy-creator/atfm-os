@@ -10,6 +10,7 @@ import { FinanceModule } from "./finance/finance.module";
 import { GovernanceModule } from "./governance/governance.module";
 import { InvestmentsModule } from "./investments/investments.module";
 import { DocumentsModule } from "./documents/documents.module";
+import { BiModule } from "./bi/bi.module";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { DocumentsModule } from "./documents/documents.module";
     GovernanceModule,
     InvestmentsModule,
     DocumentsModule,
+    BiModule,
   ],
 })
 export class AppModule {}

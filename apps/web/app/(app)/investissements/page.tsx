@@ -135,6 +135,9 @@ export default async function InvestissementsPage({ searchParams }: { searchPara
           <a href="/documents" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Documents
           </a>
+          <a href="/bi" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            BI
+          </a>
           <LogoutButton />
         </div>
       </header>

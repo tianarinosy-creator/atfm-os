@@ -111,6 +111,9 @@ export default async function DocumentsPage({
           <a href="/investissements" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Investissements
           </a>
+          <a href="/bi" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            BI
+          </a>
           <LogoutButton />
         </div>
       </header>

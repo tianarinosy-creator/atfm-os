@@ -18,6 +18,7 @@ export function createPrismaMock() {
     affectation: {
       update: jest.fn(),
       create: jest.fn(),
+      findMany: jest.fn(),
     },
     coreEvent: {
       create: jest.fn(),
@@ -27,12 +28,14 @@ export function createPrismaMock() {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      count: jest.fn(),
     },
     crmDeal: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      count: jest.fn(),
     },
     crmActivity: {
       create: jest.fn(),
