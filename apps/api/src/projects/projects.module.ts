@@ -9,5 +9,6 @@ import { TasksService } from "./tasks/tasks.service";
   imports: [DirectoryModule],
   controllers: [ProjectsController, TasksController],
   providers: [ProjectsService, TasksService],
+  exports: [ProjectsService, TasksService],
 })
 export class ProjectsModule {}

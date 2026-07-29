@@ -20,5 +20,6 @@ export const config = {
     "/investissements/:path*",
     "/documents/:path*",
     "/bi/:path*",
+    "/integrations/:path*",
   ],
 };

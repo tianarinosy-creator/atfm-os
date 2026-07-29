@@ -135,6 +135,9 @@ export default async function FinancePage({ searchParams }: { searchParams: { so
           <a href="/bi" className="text-xs font-semibold text-ink-soft hover:text-ink">
             BI
           </a>
+          <a href="/integrations" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            Intégrations
+          </a>
           <LogoutButton />
         </div>
       </header>

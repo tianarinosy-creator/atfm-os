@@ -142,6 +142,9 @@ export default async function BiPage({
           <a href="/documents" className="text-xs font-semibold text-ink-soft hover:text-ink">
             Documents
           </a>
+          <a href="/integrations" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            Intégrations
+          </a>
           <LogoutButton />
         </div>
       </header>

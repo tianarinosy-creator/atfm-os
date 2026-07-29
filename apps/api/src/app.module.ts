@@ -11,6 +11,7 @@ import { GovernanceModule } from "./governance/governance.module";
 import { InvestmentsModule } from "./investments/investments.module";
 import { DocumentsModule } from "./documents/documents.module";
 import { BiModule } from "./bi/bi.module";
+import { OdooModule } from "./integrations/odoo/odoo.module";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { BiModule } from "./bi/bi.module";
     InvestmentsModule,
     DocumentsModule,
     BiModule,
+    OdooModule,
   ],
 })
 export class AppModule {}

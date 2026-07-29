@@ -719,3 +719,80 @@ model Document {
   @@index([society, category])
   @@map("documents")
 }
+
+// ============================================================
+// INTÉGRATIONS — Phase 4, connecteur Odoo réel, par société.
+// Contrairement au prototype (connexion simulée par un setTimeout, identifiants
+// dans le localStorage du navigateur), l'API Odoo est réellement appelée en
+// JSON-RPC depuis le backend (voir apps/api/src/integrations/odoo/odoo-client.ts)
+// et la clé API n'est JAMAIS renvoyée au navigateur après écriture — seul son
+// statut (connecté/non connecté) l'est. Elle est chiffrée au repos (AES-256-GCM,
+// voir odoo-crypto.util.ts) : la base de données ne contient jamais la clé en clair.
+// ============================================================
+
+enum OdooModuleId {
+  crm
+  documents
+  rh
+  facturation
+  projets
+}
+
+model OdooConnection {
+  society String @id
+
+  url      String
+  database String
+  username String
+  /// Payload chiffré "iv:authTag:ciphertext" — jamais la clé API en clair.
+  apiKeyEncrypted String @map("api_key_encrypted")
+
+  connected       Boolean   @default(false)
+  lastConnectedAt DateTime? @map("last_connected_at")
+  lastError       String?   @map("last_error")
+
+  selectedModules OdooModuleId[] @map("selected_modules")
+
+  fieldMappings    OdooFieldMapping[]
+  migrationReports OdooMigrationReport[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("odoo_connections")
+}
+
+/// Ne redéfinit jamais QUEL champ Odoo alimente quelle colonne ATFM (fixé dans
+/// odoo.constants.ts / OdooImportService) — seulement l'intitulé affiché dans
+/// l'écran de correspondance, personnalisable par société (voir OdooMappingStep).
+model OdooFieldMapping {
+  id      String         @id @default(uuid())
+  society String
+  connection OdooConnection @relation(fields: [society], references: [society], onDelete: Cascade)
+
+  moduleId  OdooModuleId @map("module_id")
+  odooField String       @map("odoo_field")
+  atfmLabel String       @map("atfm_label")
+
+  @@unique([society, moduleId, odooField])
+  @@map("odoo_field_mappings")
+}
+
+/// Un enregistrement par module importé à chaque exécution — jamais un état
+/// "en cours" persistant : un import réel se termine ou échoue dans le cycle
+/// de la requête HTTP qui le déclenche (voir OdooImportService.runImport).
+model OdooMigrationReport {
+  id      String         @id @default(uuid())
+  society String
+  connection OdooConnection @relation(fields: [society], references: [society], onDelete: Cascade)
+
+  moduleId   OdooModuleId @map("module_id")
+  available  Int          @map("available")
+  imported   Int
+  truncated  Boolean      @default(false)
+  errors     String[]
+  runAt      DateTime     @default(now()) @map("run_at")
+
+  @@index([society])
+  @@map("odoo_migration_reports")
+}

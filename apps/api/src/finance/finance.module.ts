@@ -11,5 +11,6 @@ import { SummaryService } from "./summary/summary.service";
 @Module({
   controllers: [InvoicesController, ExpensesController, BudgetsController, SummaryController],
   providers: [InvoicesService, ExpensesService, BudgetsService, SummaryService],
+  exports: [InvoicesService, ExpensesService, BudgetsService, SummaryService],
 })
 export class FinanceModule {}

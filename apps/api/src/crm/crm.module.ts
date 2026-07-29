@@ -10,5 +10,6 @@ import { DealsService } from "./deals/deals.service";
   imports: [DirectoryModule],
   controllers: [ContactsController, DealsController, ContractsController],
   providers: [ContactsService, DealsService],
+  exports: [ContactsService, DealsService],
 })
 export class CrmModule {}

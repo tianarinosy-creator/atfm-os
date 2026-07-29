@@ -72,6 +72,9 @@ export default async function RhAnnuairePage() {
           <a href="/bi" className="text-xs font-semibold text-ink-soft hover:text-ink">
             BI
           </a>
+          <a href="/integrations" className="text-xs font-semibold text-ink-soft hover:text-ink">
+            Intégrations
+          </a>
           <LogoutButton />
         </div>
       </header>

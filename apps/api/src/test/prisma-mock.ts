@@ -141,6 +141,21 @@ export function createPrismaMock() {
       create: jest.fn(),
       update: jest.fn(),
     },
+    odooConnection: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      update: jest.fn(),
+    },
+    odooFieldMapping: {
+      count: jest.fn(),
+      createMany: jest.fn(),
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    odooMigrationReport: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
 
