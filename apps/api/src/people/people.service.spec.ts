@@ -250,6 +250,87 @@ describe("PeopleService", () => {
     });
   });
 
+  describe("findOne", () => {
+    const person = {
+      id: "person-1",
+      firstName: "Elodie",
+      lastName: "Vasseur",
+      nationalId: "102071025830",
+      nationalIdDate: new Date("2017-06-06"),
+      nationalIdPlace: "Sabotsy Namehana",
+      affectations: [
+        { id: "aff-1", society: "logistics", department: "Commercial", position: "Chargée grands comptes", exitDate: null, status: "Actif", salary: 700000 },
+      ],
+    };
+
+    it("renvoie l'identité nationale et le salaire au RH de la société de la personne", async () => {
+      (prisma.client.person.findUnique as jest.Mock).mockResolvedValue(person);
+
+      const result = await service.findOne("person-1", rh("logistics"));
+
+      expect(result.nationalId).toBe("102071025830");
+      expect((result.affectations[0] as { salary: number }).salary).toBe(700000);
+    });
+
+    it("masque l'identité nationale et le salaire pour un acteur sans rôle RH sur cette société", async () => {
+      (prisma.client.person.findUnique as jest.Mock).mockResolvedValue(person);
+
+      const result = await service.findOne("person-1", rh("tech"));
+
+      expect(result.nationalId).toBeNull();
+      expect(result.nationalIdDate).toBeNull();
+      expect(result.nationalIdPlace).toBeNull();
+      expect((result.affectations[0] as { salary: number | null }).salary).toBeNull();
+    });
+  });
+
+  describe("updateAffectationDetails", () => {
+    const person = {
+      id: "person-1",
+      firstName: "Elodie",
+      lastName: "Vasseur",
+      affectations: [
+        { id: "aff-1", society: "logistics", department: "Commercial", position: "Chargée grands comptes", manager: "Karim", entryDate: new Date(), exitDate: null, status: "Actif", replacement: null },
+      ],
+    };
+
+    it("met à jour poste/département/salaire et publie EmployeeUpdated", async () => {
+      (prisma.client.person.findUnique as jest.Mock).mockResolvedValue(person);
+      (prisma.client.affectation.update as jest.Mock).mockResolvedValue({ id: "aff-1", position: "Responsable grands comptes", salary: 800000 });
+
+      const result = await service.updateAffectationDetails(
+        "person-1",
+        "aff-1",
+        { position: "Responsable grands comptes", salary: 800000 },
+        rh("logistics"),
+      );
+
+      expect(prisma.client.affectation.update).toHaveBeenCalledWith({
+        where: { id: "aff-1" },
+        data: { position: "Responsable grands comptes", salary: 800000 },
+      });
+      expect(result.position).toBe("Responsable grands comptes");
+      expect(events.publish).toHaveBeenCalledWith("EmployeeUpdated", "person-1", "Elodie Vasseur", expect.stringContaining("logistics"));
+    });
+
+    it("refuse un RH d'une société différente de celle de l'affectation", async () => {
+      (prisma.client.person.findUnique as jest.Mock).mockResolvedValue(person);
+
+      await expect(
+        service.updateAffectationDetails("person-1", "aff-1", { salary: 800000 }, rh("tech")),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.client.affectation.update).not.toHaveBeenCalled();
+    });
+
+    it("404 si l'affectation n'existe pas sur cette personne", async () => {
+      (prisma.client.person.findUnique as jest.Mock).mockResolvedValue({ ...person, affectations: [] });
+
+      await expect(
+        service.updateAffectationDetails("person-1", "aff-inconnue", { salary: 800000 }, rh("logistics")),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe("update", () => {
     const person = {
       id: "person-1",

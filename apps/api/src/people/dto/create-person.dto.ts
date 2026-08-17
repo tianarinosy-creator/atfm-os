@@ -1,4 +1,4 @@
-import { IsDateString, IsEmail, IsOptional, IsString, MinLength } from "class-validator";
+import { IsDateString, IsEmail, IsInt, IsOptional, IsString, Min, MinLength } from "class-validator";
 
 /// Réservé au module RH — voir PeopleService.create() et RequireRole('RH').
 export class CreatePersonDto {
@@ -28,6 +28,19 @@ export class CreatePersonDto {
   @IsString()
   address?: string;
 
+  // Identité nationale — sensible, voir PeopleService.findOne (masquée hors RH).
+  @IsOptional()
+  @IsString()
+  nationalId?: string;
+
+  @IsOptional()
+  @IsDateString()
+  nationalIdDate?: string;
+
+  @IsOptional()
+  @IsString()
+  nationalIdPlace?: string;
+
   // Première affectation, ouverte dans la société qui crée la personne.
   @IsString()
   society!: string;
@@ -45,4 +58,10 @@ export class CreatePersonDto {
   @IsOptional()
   @IsDateString()
   entryDate?: string;
+
+  // Salaire de cette première affectation — sensible, même règle d'accès.
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  salary?: number;
 }

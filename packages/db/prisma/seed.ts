@@ -55,9 +55,10 @@ function demoMember(
 //   - Randriamanantena Eric Heriniaina : CREATIC (BASE) vs HAVANANA LOGISTICS (Consultants)
 //   - Razafimanantsoa Jean Patrick : ATFM (BASE) vs HAVANANA FILMS (Consultants)
 //
-// Aucune de ces 22 personnes réelles n'a de compte de connexion pour l'instant
-// (hasAccount: false) — le rôle "RH" (première personne de chaque liste) est donc
-// sans effet pratique tant qu'aucun compte n'existe pour l'exercer.
+// Seule la première personne de chaque société réelle (déjà rôle "RH") a un compte
+// de connexion (hasAccount: true) — pour pouvoir utiliser l'interface d'édition RH.
+// Les 17 autres restent annuaire seul (hasAccount: false) ; à ajuster si un autre
+// référent doit porter ce compte à la place.
 const RH_SEED_TEAMS: Record<string, TeamMemberSeed[]> = {
   atfm: [
     {
@@ -67,7 +68,7 @@ const RH_SEED_TEAMS: Record<string, TeamMemberSeed[]> = {
       department: "Responsable Administratif et Ressources Humaines",
       manager: null,
       isCommercial: false,
-      hasAccount: false,
+      hasAccount: true,
       entryDate: new Date("2026-05-01"),
       birthDate: new Date("1999-05-20"),
       phone: "034 27 941 68",
@@ -164,7 +165,7 @@ const RH_SEED_TEAMS: Record<string, TeamMemberSeed[]> = {
       department: "Commercial",
       manager: null,
       isCommercial: true,
-      hasAccount: false,
+      hasAccount: true,
       entryDate: new Date("2026-07-28"),
       birthDate: new Date("1998-02-28"),
       phone: "033 91 363 07",
@@ -222,7 +223,7 @@ const RH_SEED_TEAMS: Record<string, TeamMemberSeed[]> = {
       department: "Comptable",
       manager: null,
       isCommercial: false,
-      hasAccount: false,
+      hasAccount: true,
       entryDate: new Date("2026-04-10"),
       birthDate: new Date("2003-01-22"),
       phone: "034 41 171 68",
@@ -287,7 +288,7 @@ const RH_SEED_TEAMS: Record<string, TeamMemberSeed[]> = {
       department: "Assistant Administratif et Comptable",
       manager: null,
       isCommercial: false,
-      hasAccount: false,
+      hasAccount: true,
       entryDate: new Date("2022-07-01"),
       birthDate: new Date("1996-06-24"),
       phone: "034 13 666 25",
@@ -399,7 +400,7 @@ const RH_SEED_TEAMS: Record<string, TeamMemberSeed[]> = {
       department: "Développeur",
       manager: null,
       isCommercial: false,
-      hasAccount: false,
+      hasAccount: true,
       entryDate: new Date("2025-07-21"),
       birthDate: new Date("2002-01-29"),
       phone: "033 51 170 55",

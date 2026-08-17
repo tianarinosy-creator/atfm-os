@@ -32,4 +32,17 @@ export class UpdatePersonDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  // Identité nationale — sensible, voir PeopleService.findOne (masquée hors RH).
+  @IsOptional()
+  @IsString()
+  nationalId?: string;
+
+  @IsOptional()
+  @IsDateString()
+  nationalIdDate?: string;
+
+  @IsOptional()
+  @IsString()
+  nationalIdPlace?: string;
 }

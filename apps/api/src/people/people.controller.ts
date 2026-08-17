@@ -4,6 +4,7 @@ import { CreatePersonDto } from "./dto/create-person.dto";
 import { UpdatePersonDto } from "./dto/update-person.dto";
 import { TransferAffectationDto } from "./dto/transfer-affectation.dto";
 import { UpdateAffectationStatusDto } from "./dto/update-affectation-status.dto";
+import { UpdateAffectationDetailsDto } from "./dto/update-affectation-details.dto";
 import { QueryPeopleDto } from "./dto/query-people.dto";
 import { RequireRole } from "../common/decorators/roles.decorator";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -50,5 +51,16 @@ export class PeopleController {
     @CurrentUser() actor: AuthenticatedUser,
   ) {
     return this.peopleService.updateAffectationStatus(id, affectationId, dto, actor);
+  }
+
+  @Patch(":id/affectations/:affectationId/details")
+  @RequireRole("RH")
+  updateAffectationDetails(
+    @Param("id") id: string,
+    @Param("affectationId") affectationId: string,
+    @Body() dto: UpdateAffectationDetailsDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.peopleService.updateAffectationDetails(id, affectationId, dto, actor);
   }
 }

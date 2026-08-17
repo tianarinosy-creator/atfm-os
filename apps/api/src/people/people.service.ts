@@ -9,6 +9,7 @@ import { CreatePersonDto } from "./dto/create-person.dto";
 import { UpdatePersonDto } from "./dto/update-person.dto";
 import { TransferAffectationDto } from "./dto/transfer-affectation.dto";
 import { UpdateAffectationStatusDto } from "./dto/update-affectation-status.dto";
+import { UpdateAffectationDetailsDto } from "./dto/update-affectation-details.dto";
 import { QueryPeopleDto } from "./dto/query-people.dto";
 import { EmployeeView } from "./people.types";
 
@@ -131,6 +132,9 @@ export class PeopleService {
           email: dto.email,
           phone: dto.phone,
           address: dto.address,
+          nationalId: dto.nationalId,
+          nationalIdDate: dto.nationalIdDate ? new Date(dto.nationalIdDate) : null,
+          nationalIdPlace: dto.nationalIdPlace,
           affectations: {
             create: {
               society: dto.society,
@@ -139,6 +143,7 @@ export class PeopleService {
               manager: dto.manager,
               entryDate: dto.entryDate ? new Date(dto.entryDate) : new Date(),
               status: "Actif",
+              salary: dto.salary,
             },
           },
           account: {
@@ -178,11 +183,37 @@ export class PeopleService {
       data: {
         ...dto,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+        nationalIdDate: dto.nationalIdDate ? new Date(dto.nationalIdDate) : undefined,
       },
       ...personWithDirectory,
     });
 
     await this.events.publish("EmployeeUpdated", updated.id, `${updated.firstName} ${updated.lastName}`, "Fiche personne mise à jour");
+    return updated;
+  }
+
+  /// PATCH /people/:id/affectations/:affectationId/details — édition des champs
+  /// "métier" d'une affectation existante (poste, département, manager, salaire),
+  /// distincte du changement de statut et du transfert de société.
+  async updateAffectationDetails(id: string, affectationId: string, dto: UpdateAffectationDetailsDto, actor: AuthenticatedUser) {
+    const person = await this.findPersonRaw(id);
+    const affectation = person.affectations.find((a) => a.id === affectationId);
+    if (!affectation) throw new NotFoundException("Affectation introuvable.");
+
+    this.assertRhFor(actor, affectation.society);
+
+    const updated = await this.prisma.client.affectation.update({
+      where: { id: affectationId },
+      data: dto,
+    });
+
+    await this.events.publish(
+      "EmployeeUpdated",
+      id,
+      `${person.firstName} ${person.lastName}`,
+      `Affectation mise à jour chez ${affectation.society}`,
+    );
+
     return updated;
   }
 
