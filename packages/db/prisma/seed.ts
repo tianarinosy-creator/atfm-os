@@ -10,55 +10,437 @@ function hashPassword(password: string) {
   return bcrypt.hashSync(password, 10);
 }
 
-// Reprend RH_SEED_TEAMS du prototype atfm-legacy-os-platform.jsx :
-// [nom complet, poste, département, manager, estCommercial]
-const RH_SEED_TEAMS: Record<string, [string, string, string, string, boolean][]> = {
+interface TeamMemberSeed {
+  firstName: string;
+  lastName: string;
+  position: string;
+  department: string;
+  manager: string | null;
+  isCommercial: boolean;
+  // false pour les personnes réelles importées (annuaire seul, pas encore de connexion —
+  // voir échange avec l'utilisateur sur l'import RH réel).
+  hasAccount: boolean;
+  entryDate?: Date;
+  birthDate?: Date;
+  phone?: string;
+  address?: string;
+  // Identité nationale et salaire : donnée sensible, voir people.service.ts (findOne
+  // les masque hors RH de la société concernée).
+  nationalId?: string;
+  nationalIdDate?: Date;
+  nationalIdPlace?: string;
+  salary?: number;
+}
+
+// Housing / Impact / DS Family n'ont pas encore de données réelles — on garde les
+// mêmes personnes de démo qu'avant, juste reformatées dans le nouveau format.
+function demoMember(
+  fullName: string,
+  position: string,
+  department: string,
+  manager: string | null,
+  isCommercial: boolean,
+): TeamMemberSeed {
+  const [firstName, ...rest] = fullName.trim().split(" ");
+  return { firstName, lastName: rest.join(" ") || firstName, position, department, manager, isCommercial, hasAccount: true };
+}
+
+// Reprend RH_SEED_TEAMS du prototype atfm-legacy-os-platform.jsx pour les sociétés
+// sans donnée réelle ; atfm/logistics/films/tech/creatic viennent du fichier RH fourni
+// (Liste_collaborateurs_a_jour.xlsx, onglets BASE + Consultants + Stagiaires).
+//
+// Deux incohérences relevées dans le fichier source entre l'onglet BASE et l'onglet
+// Consultants (société différente pour la même personne) — tranchées en faveur de
+// Consultants (qui porte aussi le poste et la date d'embauche) ; à confirmer :
+//   - Randriamanantena Eric Heriniaina : CREATIC (BASE) vs HAVANANA LOGISTICS (Consultants)
+//   - Razafimanantsoa Jean Patrick : ATFM (BASE) vs HAVANANA FILMS (Consultants)
+//
+// Aucune de ces 22 personnes réelles n'a de compte de connexion pour l'instant
+// (hasAccount: false) — le rôle "RH" (première personne de chaque liste) est donc
+// sans effet pratique tant qu'aucun compte n'existe pour l'exercer.
+const RH_SEED_TEAMS: Record<string, TeamMemberSeed[]> = {
   atfm: [
-    ["Marc Delacroix", "Conseiller stratégie senior", "Conseil", "Marion Costa", false],
-    ["Sophie Renard", "Chargée de gouvernance", "Direction", "Marion Costa", false],
-    ["Julie Farge", "Chargée d'affaires", "Commercial", "Marion Costa", true],
+    {
+      firstName: "Njaraniaina Michel",
+      lastName: "Ramandiamanana",
+      position: "Responsable Administratif et Ressources Humaines",
+      department: "Responsable Administratif et Ressources Humaines",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-05-01"),
+      birthDate: new Date("1999-05-20"),
+      phone: "034 27 941 68",
+      address: "Lot 130 B Belanitra",
+      nationalId: "102071025830",
+      nationalIdDate: new Date("2017-06-06"),
+      nationalIdPlace: "Sabotsy Namehana",
+      salary: 700000,
+    },
+    {
+      firstName: "Finaritra",
+      lastName: "Rajeriarison",
+      position: "Superviseur",
+      department: "Superviseur",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-05-25"),
+      birthDate: new Date("1996-01-24"),
+      phone: "038 24 405 10",
+      nationalId: "102982094334",
+      nationalIdDate: new Date("2014-02-25"),
+      nationalIdPlace: "Tana VI",
+      salary: 1200000,
+    },
+    {
+      firstName: "Tsilavina Sergio",
+      lastName: "Ratsimandresy",
+      position: "Agent de sécurité",
+      department: "Agent de sécurité",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-05-29"),
+      birthDate: new Date("2002-04-09"),
+      phone: "038 56 049 37",
+      address: "LOT AT 25 Antanimenakely",
+      nationalId: "102091036686",
+      nationalIdDate: new Date("2020-11-30"),
+      nationalIdPlace: "Ambohimangakely",
+      salary: 400000,
+    },
+    {
+      firstName: "Tsilavina Fanomezantsoa",
+      lastName: "Randriamady",
+      position: "Agent de sécurité",
+      department: "Agent de sécurité",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-04-20"),
+      birthDate: new Date("2001-10-16"),
+      phone: "034 89 561 52",
+      address: "LOT MA V 9 Maihibaoaka",
+      nationalId: "103051022036",
+      nationalIdDate: new Date("2019-10-22"),
+      nationalIdPlace: "Ambohidratrimo",
+      salary: 400000,
+    },
+    {
+      firstName: "Iarisoa Saholy",
+      lastName: "Ralaiarimanana",
+      position: "Femme de ménage",
+      department: "Femme de ménage",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-07-06"),
+      birthDate: new Date("1980-04-05"),
+      phone: "038 75 015 37",
+      nationalId: "9435203469",
+      nationalIdDate: new Date("2026-06-20"),
+      nationalIdPlace: "Ambohidratrimo",
+      salary: 300000,
+    },
+    {
+      firstName: "Charline",
+      lastName: "Raharimalala",
+      position: "Agent de télésurveillance",
+      department: "Agent de télésurveillance",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-07-06"),
+      birthDate: new Date("2000-04-01"),
+      salary: 300000,
+    },
   ],
   logistics: [
-    ["Karim Fassi", "Responsable opérations", "Opérations", "Direction Havanana Logistics", false],
-    ["Elodie Vasseur", "Chargée grands comptes", "Commercial", "Karim Fassi", true],
-    ["Sarah Kaced", "Chargée de comptes clés (intérim)", "Commercial", "Karim Fassi", true],
-    ["Julien Roche", "Chef de projet supply chain", "Opérations", "Karim Fassi", false],
+    {
+      firstName: "Sitrakiniaina Richnah",
+      lastName: "Andriamaro",
+      position: "Commercial",
+      department: "Commercial",
+      manager: null,
+      isCommercial: true,
+      hasAccount: false,
+      entryDate: new Date("2026-07-28"),
+      birthDate: new Date("1998-02-28"),
+      phone: "033 91 363 07",
+      address: "Ouest Ambohijanahary",
+      nationalId: "101242178746",
+      nationalIdDate: new Date("2016-06-01"),
+      nationalIdPlace: "Tana IV",
+      salary: 600000,
+    },
+    {
+      firstName: "Mampiandraharijaona",
+      lastName: "Fanilo",
+      position: "Commercial",
+      department: "Commercial",
+      manager: null,
+      isCommercial: true,
+      hasAccount: false,
+      entryDate: new Date("2026-07-28"),
+      birthDate: new Date("1999-06-17"),
+      phone: "034 32 775 40",
+      address: "Cité 67 ha nord ouest - Logt 1097",
+      nationalId: "201031048667",
+      nationalIdDate: new Date("2017-07-05"),
+      nationalIdPlace: "Fianarantsoa",
+      salary: 950000,
+    },
+    {
+      firstName: "Eric Heriniaina",
+      lastName: "Randriamanantena",
+      position: "Comptable",
+      department: "Comptable",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-07-13"),
+      birthDate: new Date("2001-10-22"),
+      phone: "034 11 405 32",
+      address: "Morondrava LOT 141 FM Antehiroka",
+      nationalId: "103071024440",
+      nationalIdDate: new Date("2020-08-31"),
+      nationalIdPlace: "Ambohidratrimo",
+      salary: 650000,
+    },
   ],
   housing: [
-    ["Nadia Belkacem", "Directrice de programme", "Programmes", "Direction Havanana Housing", false],
-    ["Thomas Girard", "Gestionnaire locatif", "Gestion locative", "Nadia Belkacem", false],
-    ["Manon Rey", "Chargée de commercialisation", "Commercial", "Nadia Belkacem", true],
+    demoMember("Nadia Belkacem", "Directrice de programme", "Programmes", "Direction Havanana Housing", false),
+    demoMember("Thomas Girard", "Gestionnaire locatif", "Gestion locative", "Nadia Belkacem", false),
+    demoMember("Manon Rey", "Chargée de commercialisation", "Commercial", "Nadia Belkacem", true),
   ],
   films: [
-    ["Claire Aubert", "Chargée de production", "Production", "Direction Havanana Films", false],
-    ["Yanis Cherif", "Producteur associé", "Production", "Direction Havanana Films", false],
-    ["Théo Blanchard", "Chargé de développement commercial", "Commercial", "Direction Havanana Films", true],
+    {
+      firstName: "Johary Anthony",
+      lastName: "Andriamasy",
+      position: "Comptable",
+      department: "Comptable",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-04-10"),
+      birthDate: new Date("2003-01-22"),
+      phone: "034 41 171 68",
+      address: "LOT VE 86 AMBATOVINAKY",
+      nationalId: "101211264032",
+      nationalIdDate: new Date("2021-02-03"),
+      nationalIdPlace: "Tana I",
+      salary: 650000,
+    },
+    {
+      firstName: "Ravo Manoina",
+      lastName: "Randrianarison",
+      position: "Assistant technique",
+      department: "Assistant technique",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2025-07-31"),
+      birthDate: new Date("1997-09-27"),
+      phone: "032 07 322 49",
+      address: "LOT 58 F Amborompotsy Talatamaty",
+      nationalId: "102091025189",
+      nationalIdDate: new Date("2014-10-27"),
+      nationalIdPlace: "Ambohimangakely",
+      salary: 700000,
+    },
+    {
+      firstName: "Fitiavana Ezrah",
+      lastName: "Rakotoarilala",
+      position: "Comptable (stagiaire)",
+      department: "Comptable (stagiaire)",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-04-09"),
+      birthDate: new Date("2005-10-28"),
+      phone: "037 98 482 03",
+      address: "LOT IVO 183 GAntohamadinika Sud",
+      nationalId: "101211282112",
+      nationalIdDate: new Date("2023-11-03"),
+      nationalIdPlace: "Tana I",
+      salary: 200000,
+    },
+    {
+      firstName: "Jean Patrick",
+      lastName: "Razafimanantsoa",
+      position: "Agent de sécurité",
+      department: "Agent de sécurité",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-07-01"),
+      phone: "034 21 865 51",
+      salary: 400000,
+    },
   ],
   tech: [
-    ["Léa Fontaine", "Product Manager", "Produit", "Direction Havanana Tech", false],
-    ["Hugo Marchand", "Lead Développeur", "Ingénierie", "Direction Havanana Tech", false],
-    ["Inès Zeroual", "Développeuse Full Stack", "Ingénierie", "Hugo Marchand", false],
-    ["Maxime Le Bris", "Account Executive", "Commercial", "Léa Fontaine", true],
+    {
+      firstName: "Fenosoa Natanaela",
+      lastName: "Andriamiarambola",
+      position: "Assistant Administratif et Comptable",
+      department: "Assistant Administratif et Comptable",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2022-07-01"),
+      birthDate: new Date("1996-06-24"),
+      phone: "034 13 666 25",
+      address: "Lot 613 III Ambohinambo Talatamaty",
+      nationalId: "101981095440",
+      nationalIdDate: new Date("2014-08-04"),
+      nationalIdPlace: "Tana VI",
+      salary: 300000,
+    },
+    {
+      firstName: "Sitrakiniaina Diamondra",
+      lastName: "Andrianomentsoa",
+      position: "Commercial",
+      department: "Commercial",
+      manager: null,
+      isCommercial: true,
+      hasAccount: false,
+      entryDate: new Date("2025-11-11"),
+      birthDate: new Date("2003-07-05"),
+      phone: "038 11 405 32",
+      address: "LOT K5 002 BIS Ivato",
+      nationalId: "103111024935",
+      nationalIdDate: new Date("2021-07-06"),
+      nationalIdPlace: "Ambohidratrimo",
+      salary: 700000,
+    },
+    {
+      firstName: "Mirana Andriana",
+      lastName: "Denis",
+      position: "Sales Executive",
+      department: "Sales Executive",
+      manager: null,
+      isCommercial: true,
+      hasAccount: false,
+      entryDate: new Date("2025-02-27"),
+      birthDate: new Date("1993-01-23"),
+      phone: "038 12 405 32",
+      address: "LOT 68 F TER Talatamaty Amboropotsy",
+      nationalId: "101222105127",
+      nationalIdDate: new Date("2011-07-18"),
+      nationalIdPlace: "Antananarivo II",
+      salary: 1500000,
+    },
+    {
+      firstName: "Manova Aina",
+      lastName: "Raharimanantsoa",
+      position: "Responsable Financier",
+      department: "Responsable Financier",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2025-08-04"),
+      birthDate: new Date("2004-12-08"),
+      phone: "038 18 405 30",
+      address: "LOT 138 FM Morondava Antehiroka",
+      nationalId: "103071028713",
+      nationalIdDate: new Date("2022-12-22"),
+      nationalIdPlace: "Ambohidratrimo",
+      salary: 1000000,
+    },
+    {
+      firstName: "Laza Henintsoa Doris",
+      lastName: "Rakotoarinosy",
+      position: "Coursier",
+      department: "Coursier",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2025-04-09"),
+      birthDate: new Date("1990-11-21"),
+      phone: "034 45 275 68",
+      address: "294 Anosimasina",
+      nationalId: "105291010168",
+      nationalIdDate: new Date("2012-05-29"),
+      nationalIdPlace: "Arivonimamo",
+      salary: 300000,
+    },
+    {
+      firstName: "Maminirina Jeannot",
+      lastName: "Ratsimandresy",
+      position: "Coursier",
+      department: "Coursier",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2023-10-26"),
+      birthDate: new Date("1993-12-30"),
+      phone: "034 08 345 20",
+      address: "Lot AV 5 C Bis Ambohidroa",
+      nationalId: "101981088601",
+      nationalIdDate: new Date("2012-01-03"),
+      nationalIdPlace: "Tana VI",
+      salary: 300000,
+    },
   ],
   impact: [
-    ["Paul Lemercier", "Chargé de mission ESG", "Impact", "Direction Havanana Impact", false],
-    ["Aïcha Diallo", "Chargée de partenariats", "Commercial", "Direction Havanana Impact", true],
+    demoMember("Paul Lemercier", "Chargé de mission ESG", "Impact", "Direction Havanana Impact", false),
+    demoMember("Aïcha Diallo", "Chargée de partenariats", "Commercial", "Direction Havanana Impact", true),
   ],
   dsfamily: [
-    ["Dominique Serrano", "Gérant", "Direction", "—", false],
-    ["Olivier Weiss", "Conseiller clientèle patrimoniale", "Commercial", "Dominique Serrano", true],
+    demoMember("Dominique Serrano", "Gérant", "Direction", "—", false),
+    demoMember("Olivier Weiss", "Conseiller clientèle patrimoniale", "Commercial", "Dominique Serrano", true),
   ],
   creatic: [
-    ["Amélie Nguyen", "Directrice de création", "Création", "Direction Creatic", false],
-    ["Victor Vidal", "Directeur artistique", "Création", "Amélie Nguyen", false],
-    ["Camille Faucher", "Chargée de clientèle", "Commercial", "Amélie Nguyen", true],
+    {
+      firstName: "Manana Nyaary Mahitsison",
+      lastName: "Rakotonirainy",
+      position: "Développeur",
+      department: "Développeur",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2025-07-21"),
+      birthDate: new Date("2002-01-29"),
+      phone: "033 51 170 55",
+      address: "III H 93 B",
+      nationalId: "201031054714",
+      nationalIdDate: new Date("2020-02-04"),
+      nationalIdPlace: "Fianarantsoa",
+      salary: 1400000,
+    },
+    {
+      firstName: "Noah",
+      lastName: "Ratsimanetrimanana",
+      position: "Développeur (stagiaire)",
+      department: "Développeur (stagiaire)",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-07-20"),
+      birthDate: new Date("2006-11-13"),
+      phone: "038 37 750 60",
+      address: "LOT IVC 117 BIS Ambodovoanjo Ankaraboato",
+      nationalId: "117191022523",
+      nationalIdDate: new Date("2025-01-09"),
+      nationalIdPlace: "Ankaraobato",
+      salary: 200000,
+    },
+    {
+      firstName: "Sely Harilanto Razanamasy",
+      lastName: "Rasoamanana",
+      position: "Développeur (stagiaire)",
+      department: "Développeur (stagiaire)",
+      manager: null,
+      isCommercial: false,
+      hasAccount: false,
+      entryDate: new Date("2026-07-27"),
+      birthDate: new Date("2006-09-28"),
+      address: "LOT SOA 115 Soavinarivo Ivato",
+      salary: 200000,
+    },
   ],
 };
-
-function splitName(fullName: string) {
-  const parts = fullName.trim().split(" ");
-  return { firstName: parts[0], lastName: parts.slice(1).join(" ") || parts[0] };
-}
 
 function slugEmail(firstName: string, lastName: string) {
   return `${firstName}.${lastName}`.toLowerCase().replace(/[^a-z.]/g, "") + "@atfm-group.com";
@@ -518,10 +900,11 @@ async function main() {
 
   let i = 0;
   for (const [society, team] of Object.entries(RH_SEED_TEAMS)) {
-    for (const [teamIndex, [fullName, position, department, manager, isCommercial]] of team.entries()) {
-      const { firstName, lastName } = splitName(fullName);
+    for (const [teamIndex, member] of team.entries()) {
+      const { firstName, lastName, position, department, manager, isCommercial, hasAccount } = member;
+      const fullName = `${firstName} ${lastName}`;
       const email = slugEmail(firstName, lastName);
-      const isElodie = society === "logistics" && fullName === "Elodie Vasseur";
+      const fallbackDate = inDays(-400 - i * 120);
 
       const person = await prisma.person.create({
         data: {
@@ -529,29 +912,35 @@ async function main() {
           lastName,
           gender: "Non précisé",
           email,
-          phone: "+33 6 00 00 00 00",
-          address: "",
-          createdAt: inDays(-400 - i * 120),
-          updatedAt: inDays(-400 - i * 120),
+          phone: member.phone ?? "+33 6 00 00 00 00",
+          address: member.address ?? "",
+          birthDate: member.birthDate ?? null,
+          nationalId: member.nationalId ?? null,
+          nationalIdDate: member.nationalIdDate ?? null,
+          nationalIdPlace: member.nationalIdPlace ?? null,
+          createdAt: fallbackDate,
+          updatedAt: fallbackDate,
           affectations: {
             create: {
               society,
               department,
               position,
               manager,
-              entryDate: inDays(-400 - i * 120),
-              status: isElodie ? "Inactif" : "Actif",
-              replacement: isElodie ? "Sarah Kaced (intérim)" : null,
+              entryDate: member.entryDate ?? fallbackDate,
+              status: "Actif",
+              salary: member.salary ?? null,
             },
           },
-          account: {
-            create: {
-              username: `${firstName}.${lastName}`.toLowerCase(),
-              passwordHash: hashPassword(DEV_PASSWORD),
-              mfaEnabled: false,
-              lastLogin: inDays(-1),
-            },
-          },
+          account: hasAccount
+            ? {
+                create: {
+                  username: `${firstName}.${lastName}`.toLowerCase(),
+                  passwordHash: hashPassword(DEV_PASSWORD),
+                  mfaEnabled: false,
+                  lastLogin: inDays(-1),
+                },
+              }
+            : undefined,
         },
       });
 
@@ -566,10 +955,13 @@ async function main() {
 
       // La première personne listée pour chaque société (référence hiérarchique des
       // autres membres de l'équipe) porte aussi le rôle RH — seul rôle habilité à
-      // créer des personnes dans cette société.
+      // créer des personnes dans cette société. Sans compte (hasAccount: false), ce
+      // rôle reste sans effet pratique tant que personne ne peut se connecter.
       if (teamIndex === 0) {
         await prisma.role.create({ data: { personId: person.id, society, role: "RH" } });
-        rhAccounts.push({ society, username: `${firstName}.${lastName}`.toLowerCase() });
+        if (hasAccount) {
+          rhAccounts.push({ society, username: `${firstName}.${lastName}`.toLowerCase() });
+        }
       }
 
       await prisma.coreEvent.create({
@@ -578,7 +970,7 @@ async function main() {
           personId: person.id,
           personName: fullName,
           description: `Créé·e chez ${society} en tant que ${position} (amorçage)`,
-          createdAt: inDays(-400 - i * 120),
+          createdAt: fallbackDate,
         },
       });
 
@@ -880,7 +1272,7 @@ async function main() {
   // Documents (GED) — reprend seedDocumentsForTenant() pour chaque société.
   let documentsCreated = 0;
   for (const society of Object.keys(RH_SEED_TEAMS)) {
-    const teamIds = RH_SEED_TEAMS[society].map(([fullName]) => personIdByKey[`${society}::${fullName}`]);
+    const teamIds = RH_SEED_TEAMS[society].map((m) => personIdByKey[`${society}::${m.firstName} ${m.lastName}`]);
     const client = DOC_CLIENTS_BY_SOCIETY[society] ?? "Client";
 
     for (const [idx, tpl] of DOCUMENT_SEED_TEMPLATES.entries()) {

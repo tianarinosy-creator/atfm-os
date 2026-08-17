@@ -19,8 +19,8 @@ export class PeopleController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.peopleService.findOne(id);
+  findOne(@Param("id") id: string, @CurrentUser() actor: AuthenticatedUser) {
+    return this.peopleService.findOne(id, actor);
   }
 
   @Post()

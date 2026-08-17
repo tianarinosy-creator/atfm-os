@@ -87,13 +87,29 @@ export class PeopleService {
       .filter((view) => (query.status ? view.status === query.status : true));
   }
 
-  async findOne(id: string) {
+  private async findPersonRaw(id: string) {
     const person = await this.prisma.client.person.findUnique({
       where: { id },
       include: { affectations: { orderBy: { entryDate: "desc" } }, roles: true, account: { select: { username: true, mfaEnabled: true, lastLogin: true } } },
     });
     if (!person) throw new NotFoundException("Personne introuvable.");
     return person;
+  }
+
+  /// GET /people/:id — identité nationale et salaire (par affectation) sont retirés
+  /// de la réponse sauf pour un RH d'une société où cette personne est active.
+  async findOne(id: string, actor: AuthenticatedUser) {
+    const person = await this.findPersonRaw(id);
+    const canSeeSensitive = person.affectations.some((a) => actor.roles.some((r) => r.role === "RH" && r.society === a.society));
+    if (canSeeSensitive) return person;
+
+    return {
+      ...person,
+      nationalId: null,
+      nationalIdDate: null,
+      nationalIdPlace: null,
+      affectations: person.affectations.map((a) => ({ ...a, salary: null })),
+    };
   }
 
   /// POST /people — réservé au RH de la société de la nouvelle affectation.
@@ -150,7 +166,7 @@ export class PeopleService {
 
   /// PATCH /people/:id — mise à jour des données identitaires (hors affectation/statut).
   async update(id: string, dto: UpdatePersonDto, actor: AuthenticatedUser) {
-    const existing = await this.findOne(id);
+    const existing = await this.findPersonRaw(id);
     const currentSocieties = existing.affectations.filter((a) => !a.exitDate).map((a) => a.society);
     const canEdit = currentSocieties.some((society) => actor.roles.some((r) => r.role === "RH" && r.society === society));
     if (!canEdit) {
@@ -175,7 +191,7 @@ export class PeopleService {
   async transfer(id: string, dto: TransferAffectationDto, actor: AuthenticatedUser) {
     this.assertRhFor(actor, dto.fromSociety);
 
-    const person = await this.findOne(id);
+    const person = await this.findPersonRaw(id);
     const oldAffectation = person.affectations.find((a) => a.society === dto.fromSociety && !a.exitDate);
     if (!oldAffectation) {
       throw new NotFoundException(`Aucune affectation active chez "${dto.fromSociety}" pour cette personne.`);
@@ -214,7 +230,7 @@ export class PeopleService {
   /// (Actif / Inactif / Suspendu). Inactif => connexion bloquée, plus d'attribution,
   /// mais l'historique de l'affectation est conservé.
   async updateAffectationStatus(id: string, affectationId: string, dto: UpdateAffectationStatusDto, actor: AuthenticatedUser) {
-    const person = await this.findOne(id);
+    const person = await this.findPersonRaw(id);
     const affectation = person.affectations.find((a) => a.id === affectationId);
     if (!affectation) throw new NotFoundException("Affectation introuvable.");
 

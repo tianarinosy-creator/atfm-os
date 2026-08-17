@@ -42,6 +42,12 @@ model Person {
   phone     String?
   address   String?
 
+  // Identité nationale — donnée sensible, jamais renvoyée par l'API sauf aux rôles RH
+  // (voir PeopleService / le serializer du module People).
+  nationalId      String?
+  nationalIdDate  DateTime?
+  nationalIdPlace String?
+
   account      Account?
   affectations Affectation[]
   roles        Role[]
@@ -78,6 +84,9 @@ model Affectation {
   department String
   position   String
   manager    String?
+  // Rémunération liée à l'affectation (donnée sensible, même règle d'accès que
+  // l'identité nationale sur Person) — en ariary, montant entier.
+  salary     Int?
 
   entryDate DateTime
   exitDate  DateTime?
